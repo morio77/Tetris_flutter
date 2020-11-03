@@ -181,19 +181,102 @@ class MinoState extends ChangeNotifier{
     });
   }
 
-  // /// =====================
-  // /// ランダムにミノを生成する
-  // /// =====================
-  // List<List<int>> generateMino() {
-  //   int minoType = math.Random().nextInt(6) + 1; // ミノのタイプ
-  //   int minoArg = (math.Random().nextInt(4) + 1) * 90; // ミノの初期角度
-  //
-  //   /// ミノモデルから配列を取得
-  //   List<List<int>> minoModel = minoModelGenerater.generate(minoType, minoArg);
-  //
-  //   return minoModel;
-  // }
+  /// =====================
+  /// 指定された方向・マス数だけ、カレントミノを左(右)に動かせたら動かす
+  /// moveXPos（方向）：左に動かすなら負、右に動かすなら正
+  /// moveXPos（マス）：動かしたいマス分、絶対数を大きくする（現状1マスだけで使用する）
+  /// return：動かせたらtrue、動かせなかったらfalse
+  /// =====================
+  bool moveCurrentMinoHorizon(int moveXPos) {
+    /// カレントミノをmoveXPos移動させて、左右端にぶつかるなら return false
+    if(moveXPos > 0){
+      // カレントミノを右にmoveXPos移動させて右端にぶつかるなら return false
+      for (final sideLine in currentMinoArrangement){
+        for(int i = sideLine.length - 1 ; i >= sideLine.length - moveXPos ; i--){
+          if(sideLine[i] != 0){
+            return false;
+          }
+        }
+      }
+    }
+    else if(moveXPos < 0){
+      // カレントミノを右にmoveXPos移動させて右端にぶつかるなら return false
+      for (final sideLine in currentMinoArrangement){
+        for(int i = 0 ; i < moveXPos.abs() ; i++){
+          if(sideLine[i] != 0){
+            return false;
+          }
+        }
+      }
+    }
+    else if(moveXPos == 0){ // ここに来るということは呼ぶ側が悪い
+      return false;
+    }
 
+
+    /// カレントミノをmoveXPos移動させたらフィックスミノとぶつかるなら return false
+    if(moveXPos > 0){
+      // カレントミノを右にmoveXPos移動させてフィックスミノにぶつかるなら return false
+      int yPos = 0;
+      for (final sideLine in currentMinoArrangement){
+        for (int i = 0 ; i < sideLine.length - moveXPos ; i ++){
+          if(sideLine[i] != 0){
+            if(fixMinoArrangement[yPos][i + moveXPos] != 0){
+              return false;
+            }
+          }
+        }
+        yPos++;
+      }
+    }
+    else if (moveXPos < 0){
+      // カレントミノを左にmoveXPos移動させてフィックスミノにぶつかるなら return false
+      int yPos = 0;
+      for (final sideLine in currentMinoArrangement){
+        for (int i = sideLine.length -1  ; i > moveXPos.abs() ; i --){
+          if(sideLine[i] != 0){
+            if(fixMinoArrangement[yPos][i - moveXPos.abs()] != 0){
+              return false;
+            }
+          }
+        }
+        yPos++;
+      }
+    }
+
+    /// ここまで来たら、左右に動かせるはずなので、動かす
+    if(moveXPos > 0){ // 右に動かす
+      int yPos = 0;
+      currentMinoArrangement.forEach((sideLine) {
+        for(int i = 0 ; i < moveXPos ; i++){
+          currentMinoArrangement[yPos].removeLast(); // y行目の末尾を取り除く
+          currentMinoArrangement[yPos].insert(0, 0); // y行目の先頭に0を追加
+        }
+        yPos++;
+      });
+    }
+    else if (moveXPos < 0){ // 左に動かす
+      int yPos = 0;
+      currentMinoArrangement.forEach((sideLine) {
+        for(int i = 0 ; i < moveXPos.abs() ; i++){
+          currentMinoArrangement[yPos].removeAt(0); // y行目の先頭を取り除く
+          currentMinoArrangement[yPos].add(0); // y行目の末尾に0を追加
+        }
+        yPos++;
+      });
+    }
+
+    notifyListeners();
+    return true;
+  }
+
+  /// =====================
+  /// カレントミノを指定された角度だけ回転する
+  /// return：動かせたらtrue、動かせなかったらfalse
+  /// =====================
+  bool rotateCurrentMino(int xPos) {
+
+  }
 }
 
 class MinoController extends StatelessWidget {
@@ -216,14 +299,33 @@ class TetrisPage extends StatelessWidget {
     final Size displaySize = MediaQuery.of(context).size;
     return Scaffold(
       appBar: AppBar(
-        title: Text("テトリスがんばるぞー！"),
+        title: Text("左右に動けるようになった！"),
       ),
-      floatingActionButton: RaisedButton(
-        child: Text("スタート"),
-        onPressed: () {
-          Provider.of<MinoState>(context, listen: false).startTimer(100);
-          // Provider.of<MinoState>(context, listen: false).rotateRight("ss");
-        },
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          RaisedButton(
+            child: Text("左"),
+            onPressed: () {
+              Provider.of<MinoState>(context, listen: false).moveCurrentMinoHorizon(-1);
+              // Provider.of<MinoState>(context, listen: false).rotateRight("ss");
+            },
+          ),
+          RaisedButton(
+            child: Text("右"),
+            onPressed: () {
+              Provider.of<MinoState>(context, listen: false).moveCurrentMinoHorizon(1);
+              // Provider.of<MinoState>(context, listen: false).rotateRight("ss");
+            },
+          ),
+          RaisedButton(
+            child: Text("スタート"),
+            onPressed: () {
+              Provider.of<MinoState>(context, listen: false).startTimer(100);
+              // Provider.of<MinoState>(context, listen: false).rotateRight("ss");
+            },
+          ),
+        ],
       ),
       body: Center(
         child: Stack(
