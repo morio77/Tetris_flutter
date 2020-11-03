@@ -8,7 +8,6 @@ import 'package:provider/provider.dart';
 
 class MinoState extends ChangeNotifier{
   Timer timer;
-  int count = 0;
   bool isGameOver = false;
   /// 落下して位置が決まったすべてのミノ（フィックスミノ）
   List<List<int>> fixMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
@@ -52,52 +51,23 @@ class MinoState extends ChangeNotifier{
   }
 
   /// =====================
-  /// メインのループ
+  /// メインループ 始まり
   /// =====================
   void mainRoop(Timer timer){
 
-    /// カレントミノがすべて0だったら、カレントミノを作成する
+    /// カレントミノがすべて0だったら、ミノを作成して、落下中のミノ配置図（カレントミノ）に反映する
     if(currentMinoArrangement.every((element) => element.every((element) => element == 0))){
-
-      /// ミノ作成
-      var minoModel = generateMino();
-
-      /// 作成したミノを、落下中のミノ配置図（カレントミノ）に反映する
-      int lineNumber = 0;
-      int horizontalNumber;
-      minoModel.forEach((lineList) {
-        horizontalNumber = 4;
-        lineList.forEach((square) {
-          if(currentMinoArrangement[lineNumber][horizontalNumber] == 0){
-            currentMinoArrangement[lineNumber][horizontalNumber] = square;
-          }
-          horizontalNumber++;
-        });
-        lineNumber++;
-      });
+      // ミノを作成して、落下中のミノ配置図（カレントミノ）に反映する
+      _createMinoAndReflectCurrentMino();
     }
     /// カレントミノが落下中で1マス落としても衝突しないなら、1マス落とす
     else {
 
       /// 1マス落とすと 下端 or フィックスミノ に衝突する場合は、カレントミノをフィックスミノに反映
-      if(isCollideBottom() || isCollideFixMino()){
-        // カレントミノをフィックスミノに反映して、カレントミノをクリア
-        int xPos = 0;
-        fixMinoArrangement.forEach((sideLine) {
-          int yPos = 0;
-          sideLine.forEach((square) {
-            if(currentMinoArrangement[xPos][yPos] != 0){
-              if(square != 0) {
-                isGameOver = true;
-              }
-              else {
-                fixMinoArrangement[xPos][yPos] = currentMinoArrangement[xPos][yPos];
-              }
-            }
-            yPos++;
-          });
-          xPos++;
-        });
+      if(_isCollideBottom() || _isCollideFixMino()){
+
+        // カレントミノをフィックスミノに反映
+        _reflectCurrentMinoInFixMino();
 
         // カレントミノを0でクリア
         currentMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
@@ -108,7 +78,6 @@ class MinoState extends ChangeNotifier{
         currentMinoArrangement.insert(0, [0,0,0,0,0,0,0,0,0,0,]);
         currentMinoArrangement.removeAt(currentMinoArrangement.length -1);
       }
-
     }
 
     notifyListeners();
@@ -118,12 +87,42 @@ class MinoState extends ChangeNotifier{
       stopTimer();
     }
   }
+  /// =====================
+  /// メインループ 終わり
+  /// =====================
 
+
+  /// =====================
+  /// ミノを作成して、落下中のミノ配置図（カレントミノ）に反映する
+  /// =====================
+  void _createMinoAndReflectCurrentMino() {
+
+    /// ミノ作成（タイプと角度をランダムに）
+    int minoType = math.Random().nextInt(6) + 1; // ミノのタイプ
+    int minoArg = (math.Random().nextInt(4) + 1) * 90; // ミノの初期角度
+
+    /// ミノモデルから配列を取得
+    List<List<int>> minoModel = minoModelGenerater.generate(minoType, minoArg);
+
+    /// 作成したミノを、落下中のミノ配置図（カレントミノ）に反映する
+    int lineNumber = 0;
+    int horizontalNumber;
+    minoModel.forEach((lineList) {
+      horizontalNumber = 4;
+      lineList.forEach((square) {
+        if(currentMinoArrangement[lineNumber][horizontalNumber] == 0){
+          currentMinoArrangement[lineNumber][horizontalNumber] = square;
+        }
+        horizontalNumber++;
+      });
+      lineNumber++;
+    });
+  }
 
   /// =====================
   /// 1マス落下させたら、カレントミノが下端に衝突するか？
   /// =====================
-  bool isCollideBottom() {
+  bool _isCollideBottom() {
     if(currentMinoArrangement[currentMinoArrangement.length -1].every((square) => square == 0)){
       return false;
     }
@@ -135,7 +134,7 @@ class MinoState extends ChangeNotifier{
   /// =====================
   /// 1マス落下させたら、カレントミノがフィックスミノに衝突するか？
   /// =====================
-  bool isCollideFixMino() {
+  bool _isCollideFixMino() {
 
     // 1マス下げカレントミノの0以外の場所が、フィックスミノの0以外の場所とかぶったら true を返す
     int xPos = 1;
@@ -160,17 +159,40 @@ class MinoState extends ChangeNotifier{
   }
 
   /// =====================
-  /// ランダムにミノを生成する
+  /// カレントミノをフィックスミノに反映
   /// =====================
-  List<List<int>> generateMino() {
-    int minoType = math.Random().nextInt(6) + 1; // ミノのタイプ
-    int minoArg = (math.Random().nextInt(4) + 1) * 90; // ミノの初期角度
-
-    /// ミノモデルから配列を取得
-    List<List<int>> minoModel = minoModelGenerater.generate(minoType, minoArg);
-
-    return minoModel;
+  void _reflectCurrentMinoInFixMino() {
+    // カレントミノをフィックスミノに反映する
+    int xPos = 0;
+    fixMinoArrangement.forEach((sideLine) { ///カレントミノで回したほうがいいか・・・？（TBD）
+      int yPos = 0;
+      sideLine.forEach((square) {
+        if(currentMinoArrangement[xPos][yPos] != 0){
+          if(square != 0) {
+            isGameOver = true;
+          }
+          else {
+            fixMinoArrangement[xPos][yPos] = currentMinoArrangement[xPos][yPos];
+          }
+        }
+        yPos++;
+      });
+      xPos++;
+    });
   }
+
+  // /// =====================
+  // /// ランダムにミノを生成する
+  // /// =====================
+  // List<List<int>> generateMino() {
+  //   int minoType = math.Random().nextInt(6) + 1; // ミノのタイプ
+  //   int minoArg = (math.Random().nextInt(4) + 1) * 90; // ミノの初期角度
+  //
+  //   /// ミノモデルから配列を取得
+  //   List<List<int>> minoModel = minoModelGenerater.generate(minoType, minoArg);
+  //
+  //   return minoModel;
+  // }
 
 }
 
