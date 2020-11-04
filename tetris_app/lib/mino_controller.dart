@@ -46,6 +46,14 @@ class MinoState extends ChangeNotifier{
     timer.cancel();
   }
 
+  void reset() {
+    timer.cancel();
+    fixMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
+    currentMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
+    notifyListeners();
+    timer = null;
+  }
+
   /// =====================
   /// メインループ 始まり
   /// =====================
@@ -229,7 +237,7 @@ class MinoState extends ChangeNotifier{
       // カレントミノを左にmoveXPos移動させてフィックスミノにぶつかるなら return false
       int yPos = 0;
       for (final sideLine in currentMinoArrangement){
-        for (int i = sideLine.length -1  ; i > moveXPos.abs() ; i --){
+        for (int i = sideLine.length -1  ; i >= moveXPos.abs() ; i --){
           if(sideLine[i] != 0){
             if(fixMinoArrangement[yPos][i - moveXPos.abs()] != 0){
               return false;
@@ -270,7 +278,7 @@ class MinoState extends ChangeNotifier{
   /// カレントミノを右に90度回転する
   /// return：動かせたらtrue、動かせなかったらfalse
   /// =====================
-  bool rotateRightCurrentMino(int arg) {
+  bool rotateRightCurrentMino() {
 
   }
 
@@ -278,7 +286,7 @@ class MinoState extends ChangeNotifier{
   /// カレントミノを左に90度回転する
   /// return：動かせたらtrue、動かせなかったらfalse
   /// =====================
-  bool rotateLeftCurrentMino(int arg) {
+  bool rotateLeftCurrentMino() {
 
   }
 }
@@ -301,32 +309,50 @@ class TetrisPage extends StatelessWidget {
     // Provider.of<MinoState>(context, listen: false).startTimer(2000);
 
     final Size displaySize = MediaQuery.of(context).size;
+    final double height = displaySize.height * 0.7;
+    final double width = height * 0.5;
     return Scaffold(
       appBar: AppBar(
-        title: Text("左右に動けるようになった！"),
+        title: Text("角度のついたミノが生成"),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.restaurant),
+            onPressed: () {
+              Provider.of<MinoState>(context, listen: false).startTimer(150);
+              // Provider.of<MinoState>(context, listen: false).rotateRight("ss");
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.refresh),
+            onPressed: () {
+              Provider.of<MinoState>(context, listen: false).reset();
+              // Provider.of<MinoState>(context, listen: false).rotateRight("ss");
+            },
+          ),
+        ],
       ),
-      floatingActionButton: Column(
+      floatingActionButton: Row(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          RaisedButton(
-            child: Text("左"),
+          FloatingActionButton(
+            heroTag: "moveLeft",
+            child: Icon(Icons.arrow_left),
             onPressed: () {
               Provider.of<MinoState>(context, listen: false).moveCurrentMinoHorizon(-1);
-              // Provider.of<MinoState>(context, listen: false).rotateRight("ss");
             },
           ),
-          RaisedButton(
-            child: Text("右"),
+          FloatingActionButton(
+            heroTag: "moveRight",
+            child: Icon(Icons.arrow_right),
             onPressed: () {
               Provider.of<MinoState>(context, listen: false).moveCurrentMinoHorizon(1);
-              // Provider.of<MinoState>(context, listen: false).rotateRight("ss");
             },
           ),
-          RaisedButton(
-            child: Text("スタート"),
+          FloatingActionButton(
+            heroTag: "rotateRight",
+            child: Icon(Icons.rotate_90_degrees_ccw),
             onPressed: () {
-              Provider.of<MinoState>(context, listen: false).startTimer(100);
-              // Provider.of<MinoState>(context, listen: false).rotateRight("ss");
+              Provider.of<MinoState>(context, listen: false).rotateRightCurrentMino();
             },
           ),
         ],
@@ -336,16 +362,16 @@ class TetrisPage extends StatelessWidget {
           children: [
             Container(
               color: Colors.grey.withOpacity(0.3),
-              height: displaySize.height * 0.8,
-              width: displaySize.height * 0.4,
+              height: height,
+              width: width,
               child: CustomPaint( /// フィックスしたミノ配置図
                 painter: MinoPainter(Provider.of<MinoState>(context, listen: true).fixMinoArrangement),
               ),
             ),
             Container(
               color: Colors.grey.withOpacity(0.3),
-              height: displaySize.height * 0.8,
-              width: displaySize.height * 0.4,
+              height: height,
+              width: width,
               child: CustomPaint( /// 落下中のミノ配置図
                 painter: MinoPainter(Provider.of<MinoState>(context, listen: true).currentMinoArrangement),
               ),
