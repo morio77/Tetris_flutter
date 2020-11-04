@@ -39,11 +39,7 @@ class MinoState extends ChangeNotifier{
   List<List<int>> currentMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
 
   void startTimer(int millisecond) {
-      timer = timer == null ? Timer.periodic(Duration(milliseconds: millisecond), mainRoop,) : timer;
-  }
-
-  void _onTimer(Timer timer) {
-
+      timer = timer == null ? Timer.periodic(Duration(milliseconds: millisecond), _mainRoop,) : timer;
   }
 
   void stopTimer() {
@@ -53,7 +49,7 @@ class MinoState extends ChangeNotifier{
   /// =====================
   /// メインループ 始まり
   /// =====================
-  void mainRoop(Timer timer){
+  void _mainRoop(Timer timer){
 
     /// カレントミノがすべて0だったら、ミノを作成して、落下中のミノ配置図（カレントミノ）に反映する
     if(currentMinoArrangement.every((element) => element.every((element) => element == 0))){
@@ -271,10 +267,18 @@ class MinoState extends ChangeNotifier{
   }
 
   /// =====================
-  /// カレントミノを指定された角度だけ回転する
+  /// カレントミノを右に90度回転する
   /// return：動かせたらtrue、動かせなかったらfalse
   /// =====================
-  bool rotateCurrentMino(int xPos) {
+  bool rotateRightCurrentMino(int arg) {
+
+  }
+
+  /// =====================
+  /// カレントミノを左に90度回転する
+  /// return：動かせたらtrue、動かせなかったらfalse
+  /// =====================
+  bool rotateLeftCurrentMino(int arg) {
 
   }
 }
