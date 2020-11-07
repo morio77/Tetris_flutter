@@ -311,6 +311,8 @@ class MinoState extends ChangeNotifier{
       int adjustYPos = 0;
       // カレントミノをクリアしておく
       currentMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
+
+      // ここから回転実施
       for(final sideLine in rotateMinoModel){
         int adjustXPos = 0;
         for(final square in sideLine){
@@ -323,6 +325,10 @@ class MinoState extends ChangeNotifier{
       }
     }
 
+    currentMinoArg += rotateArg;
+    if(currentMinoArg == 360){
+      currentMinoArg = 0;
+    }
     notifyListeners();
     return true;
   }
@@ -536,7 +542,7 @@ class MinoState extends ChangeNotifier{
       for(final sideLine in rotateMinoModel){
         int adjustYPos = 0; // 適用開始位置からの相対yPos
         for(final square in sideLine){
-          if(square != 0 && fixMinoArrangement[applyStartXPos + adjustXPos][applyStartYPos + adjustYPos] != 0){
+          if(square != 0 && fixMinoArrangement[applyStartYPos + adjustYPos][applyStartXPos + adjustXPos] != 0){
             return true;
           }
           adjustYPos++;
