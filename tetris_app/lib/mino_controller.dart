@@ -9,6 +9,8 @@ import 'package:provider/provider.dart';
 class MinoState extends ChangeNotifier{
   Timer timer;
   bool isGameOver = false;
+  int currentMinoType;
+  int currentMinoArg;
   /// 落下して位置が決まったすべてのミノ（フィックスミノ）
   List<List<int>> fixMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
   // ↓こんな感じなのができる
@@ -68,7 +70,7 @@ class MinoState extends ChangeNotifier{
     else {
 
       /// 1マス落とすと 下端 or フィックスミノ に衝突する場合は、カレントミノをフィックスミノに反映
-      if(_isCollideBottom() || _isCollideFixMino()){
+      if(_isCollideBottomWhen1SquareDown() || _isCollideFixMinoWhen1SquareDown()){
 
         // カレントミノをフィックスミノに反映
         _reflectCurrentMinoInFixMino();
@@ -102,11 +104,11 @@ class MinoState extends ChangeNotifier{
   void _createMinoAndReflectCurrentMino() {
 
     /// ミノ作成（タイプと角度をランダムに）
-    int minoType = math.Random().nextInt(6) + 1; // ミノのタイプ
-    int minoArg = (math.Random().nextInt(4) + 1) * 90; // ミノの初期角度
+    currentMinoType = math.Random().nextInt(6) + 1; // ミノのタイプ
+    currentMinoArg = (math.Random().nextInt(4) + 1) * 90; // ミノの初期角度
 
     /// ミノモデルから配列を取得
-    List<List<int>> minoModel = minoModelGenerater.generate(minoType, minoArg);
+    List<List<int>> minoModel = minoModelGenerater.generate(currentMinoType, currentMinoArg);
 
     /// 作成したミノを、落下中のミノ配置図（カレントミノ）に反映する
     int lineNumber = 0;
@@ -126,7 +128,7 @@ class MinoState extends ChangeNotifier{
   /// =====================
   /// 1マス落下させたら、カレントミノが下端に衝突するか？
   /// =====================
-  bool _isCollideBottom() {
+  bool _isCollideBottomWhen1SquareDown() {
     if(currentMinoArrangement[currentMinoArrangement.length -1].every((square) => square == 0)){
       return false;
     }
@@ -138,7 +140,7 @@ class MinoState extends ChangeNotifier{
   /// =====================
   /// 1マス落下させたら、カレントミノがフィックスミノに衝突するか？
   /// =====================
-  bool _isCollideFixMino() {
+  bool _isCollideFixMinoWhen1SquareDown() {
 
     // 1マス下げカレントミノの0以外の場所が、フィックスミノの0以外の場所とかぶったら true を返す
     int xPos = 1;
@@ -278,8 +280,274 @@ class MinoState extends ChangeNotifier{
   /// カレントミノを右に90度回転する
   /// return：動かせたらtrue、動かせなかったらfalse
   /// =====================
-  bool rotateRightCurrentMino() {
+  bool rotateRightCurrentMino(int rotateArg) {
+    /// カレントミノを90度回転させたミノモデルを取得
+    List<List<int>> rotateMinoModel;
+    if(currentMinoArg + rotateArg == 360){
+      rotateMinoModel = minoModelGenerater.generate(currentMinoType, 0);
+    }
+    else{
+      rotateMinoModel = minoModelGenerater.generate(currentMinoType, currentMinoArg + rotateArg);
+    }
 
+    /// ミノが回転できるか判定
+    if (currentMinoType == 2){ // Oミノは常に回転可能なのでスルー
+
+    }
+    else{
+      List<int> result = _getRotateMinoPosition(rotateMinoModel, rotateArg);
+      if(result.length == 0){
+        return false;
+      }
+    }
+
+    /// ここまで来たらミノは回転可能なので回転させる
+    if (currentMinoType == 2){ // アニメーションをつけるならここで?
+
+    }
+    else{
+      int yPos = currentMinoArrangement.indexWhere((sideLine) => sideLine.every((square) => square == 0) == false);
+      int xPos = currentMinoArrangement[yPos].indexWhere((square) => square != 0);
+      int adjustYPos = 0;
+      // カレントミノをクリアしておく
+      currentMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
+      for(final sideLine in rotateMinoModel){
+        int adjustXPos = 0;
+        for(final square in sideLine){
+          if(square != 0){
+            currentMinoArrangement[yPos + adjustYPos][xPos + adjustXPos] = square;
+          }
+          adjustXPos++;
+        }
+        adjustYPos++;
+      }
+    }
+
+    notifyListeners();
+    return true;
+  }
+
+  /// =====================
+  /// カレントミノを回転させられるか確認して、回転したミノ配置できるカレントミノからの相対位置を返す
+  /// ToDo：SRSで回せるならどのパターンで回せるかを返す
+  /// Memo：https://tetrisch.github.io/main/srs.html
+  /// =====================
+  List<int> _getRotateMinoPosition(List<List<int>> rotateMinoModel, int rotateArg,) {
+    // カレントミノを先頭から検査して、初めて0以外があった位置から、決められた相対位置に回転後のミノを適用してみる
+    // （下端・左右端・上端・フィックスミノにぶつからないかチェックするべき）
+    // 適用する相対位置は、ミノタイプと今のミノの角度から算出する（のちのちSRSもこのシステムでいけるかも）
+
+    List<int> result;
+
+    // まずは右回転だけで考える
+    switch(currentMinoType){
+      case 1:
+      // Iミノ
+        switch(currentMinoArg){
+          case 0:
+            result = [2,-1];
+            break;
+          case 90:
+            result = [-2,2];
+            break;
+          case 180:
+            result = [1,-2];
+            break;
+          case 270:
+            result = [-1,1];
+            break;
+        }
+        break;
+      case 3:
+      // Sミノ
+        switch(currentMinoArg){
+          case 0:
+            result = [0,0];
+            break;
+          case 90:
+            result = [0,1];
+            break;
+          case 180:
+            result = [-1,-1];
+            break;
+          case 270:
+            result = [1,0];
+            break;
+        }
+        break;
+
+      case 4:
+      // Zミノ
+        switch(currentMinoArg){
+          case 0:
+            result = [2,0];
+            break;
+          case 90:
+            result = [-2,1];
+            break;
+          case 180:
+            result = [1,-1];
+            break;
+          case 270:
+            result = [-1,0];
+            break;
+        }
+        break;
+
+      case 5:
+      // Jミノ
+        switch(currentMinoArg){
+          case 0:
+            result = [-1,0];
+            break;
+          case 90:
+            result = [-1,1];
+            break;
+          case 180:
+            result = [0,-1];
+            break;
+          case 270:
+            result = [2,0];
+            break;
+        }
+        break;
+
+      case 6:
+      // Lミノ
+        switch(currentMinoArg){
+          case 0:
+            result = [1,0];
+            break;
+          case 90:
+            result = [-1,1];
+            break;
+          case 180:
+            result = [1,-1];
+            break;
+          case 270:
+            result = [-1,0];
+            break;
+        }
+        break;
+      case 7:
+      // Tミノ
+        switch(currentMinoArg){
+          case 0:
+            result = [0,0];
+            break;
+          case 90:
+            result = [-1,1];
+            break;
+          case 180:
+            result = [1,-1];
+            break;
+          case 270:
+            result = [0,0];
+            break;
+        }
+        break;
+    }
+    
+    /// 適用してみて、いけるならその値を返す。無理ならresultをクリアして返す
+    /// ToDo 無理でも、SRSを試してみる。
+    int yPos = 0;
+    for(final sideLine in currentMinoArrangement){
+      int xPos = 0;
+      for(final square in sideLine){
+        if(square != 0){ // ここがカレントミノの初めての0以外の位置
+          if( _isCollideBottomWhenRotate(xPos, yPos, result, rotateMinoModel ) == true || // 回転後のカレントミノが下端にぶつからないか検査
+              _isCollideLeftWhenRotate(xPos, yPos, result, rotateMinoModel)    == true || // 回転後のカレントミノが左端にぶつからないか検査
+              _isCollideRightWhenRotate(xPos, yPos, result, rotateMinoModel)   == true || // 回転後のカレントミノが右端にぶつからないか検査
+              _isCollideFixMinoWhenRotate(xPos, yPos, result, rotateMinoModel) == true    // 回転後のカレントミノがフィックスミノにぶつからないか検査
+          ) {
+            // 回転させたら衝突するので、resultをクリアしてreturn
+            result.clear();
+            return result;
+          }
+          else{
+            // 回転しても衝突しない
+            return result;
+          }
+        }
+        xPos++;
+      }
+      yPos++;
+    }
+  }
+
+  /// =====================
+  /// 回転させたら、カレントミノが下端に衝突するか？
+  /// xPos：カレントミノの0以外の初めてのindexの列番号
+  /// yPos：カレントミノの0以外の初めてのindexの行番号
+  /// relativePosition：回転後のミノをカレントミノの0意外の先頭位置からどこに適用するか
+  /// =====================
+  bool _isCollideBottomWhenRotate(int xPos, int yPos, List<int> relativePosition, List<List<int>> rotateMinoModel) {
+    if (yPos + relativePosition[1] + rotateMinoModel.length > currentMinoArrangement.length){
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+
+  /// =====================
+  /// 回転させたら、カレントミノが左端に衝突するか？
+  /// xPos：カレントミノの0以外の初めてのindexの列番号
+  /// yPos：カレントミノの0以外の初めてのindexの行番号
+  /// relativePosition：回転後のミノをカレントミノの0意外の先頭位置からどこに適用するか
+  /// =====================
+  bool _isCollideLeftWhenRotate(int xPos, int yPos, List<int> relativePosition, List<List<int>> rotateMinoModel) {
+    if(xPos - relativePosition[0] < 0){
+      return true;
+    }
+    else{
+      return false;
+    }
+  }
+
+  /// =====================
+  /// 回転させたら、カレントミノが右端に衝突するか？
+  /// xPos：カレントミノの0以外の初めてのindexの列番号
+  /// yPos：カレントミノの0以外の初めてのindexの行番号
+  /// relativePosition：回転後のミノをカレントミノの0意外の先頭位置からどこに適用するか
+  /// =====================
+  bool _isCollideRightWhenRotate(int xPos, int yPos, List<int> relativePosition, List<List<int>> rotateMinoModel) {
+    // カレントミノの0以外の初めての位indexの列番号から適用開始位置を算出して、
+    // 回転後のミノの列数を足したものがフィールドからはみ出たら(10を超えたら) false
+    if(xPos - relativePosition[0] + rotateMinoModel[0].length > currentMinoArrangement[0].length){
+      return true;
+    }
+    else{
+      return false;
+    }
+  }
+
+  /// =====================
+  /// 回転させたら、カレントミノがフィックスミノに衝突するか？
+  /// xPos：カレントミノの0以外の初めてのindexの列番号
+  /// yPos：カレントミノの0以外の初めてのindexの行番号
+  /// relativePosition：回転後のミノをカレントミノの0意外の先頭位置からどこに適用するか
+  /// =====================
+  bool _isCollideFixMinoWhenRotate(int xPos, int yPos, List<int> relativePosition, List<List<int>> rotateMinoModel) {
+    int applyStartXPos = xPos + relativePosition[0];
+    int applyStartYPos = yPos + relativePosition[1];
+    int adjustXPos = 0; // 適用開始位置からの相対xPos
+    try {
+      for(final sideLine in rotateMinoModel){
+        int adjustYPos = 0; // 適用開始位置からの相対yPos
+        for(final square in sideLine){
+          if(square != 0 && fixMinoArrangement[applyStartXPos + adjustXPos][applyStartYPos + adjustYPos] != 0){
+            return true;
+          }
+          adjustYPos++;
+        }
+        adjustXPos++;
+      }
+    } catch (e) {
+      // インデックスエラーとかでエラーしたら回転不可（なんとかせねばなー）
+      return true;
+    }
+    return false;
   }
 
   /// =====================
@@ -287,6 +555,7 @@ class MinoState extends ChangeNotifier{
   /// return：動かせたらtrue、動かせなかったらfalse
   /// =====================
   bool rotateLeftCurrentMino() {
+    // カレントミノのタイプを取得
 
   }
 }
@@ -352,7 +621,7 @@ class TetrisPage extends StatelessWidget {
             heroTag: "rotateRight",
             child: Icon(Icons.rotate_90_degrees_ccw),
             onPressed: () {
-              Provider.of<MinoState>(context, listen: false).rotateRightCurrentMino();
+              Provider.of<MinoState>(context, listen: false).rotateRightCurrentMino(90);
             },
           ),
         ],
