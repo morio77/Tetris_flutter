@@ -53,6 +53,7 @@ class MinoState extends ChangeNotifier{
     fixMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
     currentMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
     notifyListeners();
+    isGameOver = false;
     timer = null;
   }
 
@@ -74,6 +75,9 @@ class MinoState extends ChangeNotifier{
 
         // カレントミノをフィックスミノに反映
         _reflectCurrentMinoInFixMino();
+
+        // フィックスミノの行がそろっていたら行を消す
+        _deleteFixMinoSideLineIfPossible();
 
         // カレントミノを0でクリア
         currentMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
@@ -185,6 +189,36 @@ class MinoState extends ChangeNotifier{
       });
       xPos++;
     });
+  }
+
+  /// =====================
+  /// 削除できる行があるなら、削除する
+  /// return：削除したら true, 削除しなかったら false
+  /// =====================
+  bool _deleteFixMinoSideLineIfPossible() {
+    List<int> deleteIndex = List<int>(); // 削除する行番号のリスト
+
+    // 削除できる行(すべてが0以外)番号を抽出
+    int yPos = 0;
+    for(final sideLine in fixMinoArrangement){
+      if(sideLine.every((square) => square != 0)){
+        deleteIndex.add(yPos);
+      }
+      yPos++;
+    }
+
+    // 削除実行
+    if(deleteIndex.length != 0){
+      deleteIndex.forEach((index) {
+        fixMinoArrangement.removeAt(index);
+        fixMinoArrangement.insert(0, [0,0,0,0,0,0,0,0,0,0,]);
+      });
+    }
+    else{
+      return false;
+    }
+    notifyListeners();
+    return true;
   }
 
   /// =====================
@@ -588,12 +622,12 @@ class TetrisPage extends StatelessWidget {
     final double width = height * 0.5;
     return Scaffold(
       appBar: AppBar(
-        title: Text("角度のついたミノが生成"),
+        title: Text("行消せる(回転はバグあり)"),
         actions: [
           IconButton(
             icon: Icon(Icons.restaurant),
             onPressed: () {
-              Provider.of<MinoState>(context, listen: false).startTimer(150);
+              Provider.of<MinoState>(context, listen: false).startTimer(175);
               // Provider.of<MinoState>(context, listen: false).rotateRight("ss");
             },
           ),
