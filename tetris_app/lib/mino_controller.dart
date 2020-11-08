@@ -108,7 +108,7 @@ class MinoState extends ChangeNotifier{
   void _createMinoAndReflectCurrentMino() {
 
     /// ミノ作成（タイプと角度をランダムに）
-    currentMinoType = math.Random().nextInt(6) + 1; // ミノのタイプ
+    currentMinoType = math.Random().nextInt(7) + 1; // ミノのタイプ
     currentMinoArg = (math.Random().nextInt(4) + 1) * 90; // ミノの初期角度
 
     /// ミノモデルから配列を取得
@@ -744,7 +744,7 @@ class TetrisPage extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.restaurant),
             onPressed: () {
-              Provider.of<MinoState>(context, listen: false).startTimer(150);
+              Provider.of<MinoState>(context, listen: false).startTimer(225);
               // Provider.of<MinoState>(context, listen: false).rotateRight("ss");
             },
           ),
@@ -758,7 +758,7 @@ class TetrisPage extends StatelessWidget {
         ],
       ),
       floatingActionButton: Row(
-        mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           FloatingActionButton(
             heroTag: "moveLeft",
@@ -768,24 +768,26 @@ class TetrisPage extends StatelessWidget {
             },
           ),
           FloatingActionButton(
-            heroTag: "moveRight",
-            child: Icon(Icons.arrow_right),
+            heroTag: "rotateLeft",
+            // child: Text("左回転"),
+            child: Icon(Icons.rotate_left),
             onPressed: () {
-              Provider.of<MinoState>(context, listen: false).moveCurrentMinoHorizon(1);
+              Provider.of<MinoState>(context, listen: false).rotateRightCurrentMino(270);
             },
           ),
           FloatingActionButton(
             heroTag: "rotateRight",
-            child: Text("右回転"),
+            // child: Text("右回転"),
+            child: Icon(Icons.rotate_right),
             onPressed: () {
               Provider.of<MinoState>(context, listen: false).rotateRightCurrentMino(90);
             },
           ),
           FloatingActionButton(
-            heroTag: "rotateLeft",
-            child: Text("左回転"),
+            heroTag: "moveRight",
+            child: Icon(Icons.arrow_right),
             onPressed: () {
-              Provider.of<MinoState>(context, listen: false).rotateRightCurrentMino(270);
+              Provider.of<MinoState>(context, listen: false).moveCurrentMinoHorizon(1);
             },
           ),
         ],
