@@ -114,9 +114,21 @@ class MinoState extends ChangeNotifier{
     /// ミノモデルから配列を取得
     List<List<int>> minoModel = minoModelGenerater.generate(currentMinoType, currentMinoArg);
 
+    /// ミノモデルの行がすべて0の行を削除しておく
+    int deleteLineNumber = 0;
+    minoModel.forEach((sideLine) {
+      if(sideLine.every((square) => square == 0)){
+        deleteLineNumber++;
+      }
+    });
+    for(int i = 0; i < deleteLineNumber ; i++){
+      minoModel.removeAt(i);
+    }
+
     /// 作成したミノを、落下中のミノ配置図（カレントミノ）に反映する
     int lineNumber = 0;
     int horizontalNumber;
+
     minoModel.forEach((lineList) {
       horizontalNumber = 4;
       lineList.forEach((square) {
