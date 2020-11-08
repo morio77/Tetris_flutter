@@ -327,14 +327,17 @@ class MinoState extends ChangeNotifier{
   /// return：動かせたらtrue、動かせなかったらfalse
   /// =====================
   bool rotateRightCurrentMino(int rotateArg) {
+    /// 回転後の角度を求める
+    int argAfterRotation = currentMinoArg + rotateArg;
+    if(argAfterRotation == 360){
+      argAfterRotation = 0;
+    } else if (argAfterRotation > 360){
+      argAfterRotation -= 360;
+    }
+
     /// 回転後のミノモデルを取得する
     List<List<int>> rotateMinoModel;
-    if(currentMinoArg + rotateArg == 360){
-      rotateMinoModel = minoModelGenerater.generate(currentMinoType, 0);
-    }
-    else{
-      rotateMinoModel = minoModelGenerater.generate(currentMinoType, currentMinoArg + rotateArg);
-    }
+    rotateMinoModel = minoModelGenerater.generate(currentMinoType, argAfterRotation);
 
     /// 回転軸を取得する
     List<int> axisOfRotation;
@@ -397,10 +400,7 @@ class MinoState extends ChangeNotifier{
       }
     }
 
-    currentMinoArg += rotateArg;
-    if(currentMinoArg == 360){
-      currentMinoArg = 0;
-    }
+    currentMinoArg = argAfterRotation;
     notifyListeners();
     return true;
   }
@@ -776,9 +776,16 @@ class TetrisPage extends StatelessWidget {
           ),
           FloatingActionButton(
             heroTag: "rotateRight",
-            child: Icon(Icons.rotate_90_degrees_ccw),
+            child: Text("右回転"),
             onPressed: () {
               Provider.of<MinoState>(context, listen: false).rotateRightCurrentMino(90);
+            },
+          ),
+          FloatingActionButton(
+            heroTag: "rotateLeft",
+            child: Text("左回転"),
+            onPressed: () {
+              Provider.of<MinoState>(context, listen: false).rotateRightCurrentMino(270);
             },
           ),
         ],
