@@ -226,7 +226,7 @@ class minoModelGenerater  {
     return minoModel;
   }
 
-  /// カレントミノの回転軸を取得して返す
+  /// カレントミノの回転軸を取得して返す（Iミノ、Oミノ以外）
   static getAxisOfRotation(List<List<int>> currentMinoArrangement, int minoType, int minoArg){
     // ①カレントミノを先頭から検査して、初めの0以外の位置を算出
     // ②ミノタイプとミノ角度から、回転軸までの距離を特定
@@ -343,5 +343,46 @@ class minoModelGenerater  {
     }
     axisPosition = [firstNotZeroXPos + adjust[0], firstNotZeroYPos + adjust[1]];
     return axisPosition;
+  }
+
+  /// カレントミノの回転軸を取得して返す（Iミノのみ）
+  static getStartApplyPositionOfRotation(List<List<int>> currentMinoArrangement, int minoArg){
+    List<int> startApplyPosition; // [xPos, yPos] 適用開始位置
+
+    int firstNotZeroXPos;
+    int firstNotZeroYPos;
+    bool isDoneCheck = false;
+    int yPos = 0;
+    for(final sideLine in currentMinoArrangement){
+      int xPos = 0;
+      for(final square in sideLine){
+        if(square != 0 && isDoneCheck == false){
+          firstNotZeroXPos = xPos;
+          firstNotZeroYPos = yPos;
+          isDoneCheck = true;
+        }
+        xPos++;
+      }
+      yPos++;
+    }
+
+    List<int> adjust;
+    switch(minoArg){
+      case 0:
+        adjust = [2, -1];
+        break;
+      case 90:
+        adjust = [-2, 2];
+        break;
+      case 180:
+        adjust = [1, -2];
+        break;
+      case 270:
+        adjust = [-1, 1];
+        break;
+    }
+
+    startApplyPosition = [firstNotZeroXPos + adjust[0], firstNotZeroYPos + adjust[1]];
+    return startApplyPosition;
   }
 }

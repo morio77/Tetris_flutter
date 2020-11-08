@@ -341,8 +341,10 @@ class MinoState extends ChangeNotifier{
 
     /// 回転軸を取得する
     List<int> axisOfRotation;
+    List<int> startApplyPosition;
     switch(currentMinoType){
       case 1: // Iミノ
+        startApplyPosition = minoModelGenerater.getStartApplyPositionOfRotation(currentMinoArrangement, currentMinoArg);
         break;
 
       case 2: // Oミノ
@@ -357,14 +359,12 @@ class MinoState extends ChangeNotifier{
         break;
     }
 
-    List<int> result;
     /// ミノが回転できるか判定
     switch(currentMinoType){
       case 1: // Iミノ
-        // result = _getRotateMinoPosition(rotateMinoModel, rotateArg);
-        // if(result.length == 0){
-        //   return false;
-        // }
+        if(_isCollideWhenRotateOfIMino(startApplyPosition, rotateMinoModel) == true){
+          return false;
+        }
         break;
 
       case 2: // Oミノ
@@ -384,6 +384,20 @@ class MinoState extends ChangeNotifier{
     /// ここまで来たらミノは回転可能なので回転させる
     if (currentMinoType == 2){ // アニメーションをつけるならここで?
 
+    }
+    else if (currentMinoType == 1){ // Iミノ
+      currentMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
+      int yPos = 0;
+      for(final sideLine in rotateMinoModel){
+        int xPos = 0;
+        for(final square in sideLine){
+          if(square != 0){
+            currentMinoArrangement[yPos + startApplyPosition[1]][xPos + startApplyPosition[0]] = square;
+          }
+          xPos++;
+        }
+        yPos++;
+      }
     }
     else{
       currentMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
@@ -406,7 +420,7 @@ class MinoState extends ChangeNotifier{
   }
 
   /// =====================
-  /// カレントミノを回転させられるか？
+  /// カレントミノを回転させられるか？（Iミノ、Oミノ以外）
   /// =====================
   bool _isCollideWhenRotate(List<int> axisOfRotation, List<List<int>> rotateMinoModel) {
 
@@ -417,6 +431,33 @@ class MinoState extends ChangeNotifier{
         for(final square in sideLine){
           if(square != 0){
             if(fixMinoArrangement[yPos + axisOfRotation[1] -1][xPos + axisOfRotation[0] -1] != 0){
+              return true;
+            }
+          }
+          xPos++;
+        }
+        yPos++;
+      }
+    }
+    catch(e){
+      return true;
+    }
+
+    return false;
+  }
+
+  /// =====================
+  /// カレントミノを回転させられるか？（Iミノ）
+  /// =====================
+  bool _isCollideWhenRotateOfIMino(List<int> startApplyPosition, List<List<int>> rotateMinoModel) {
+
+    try{
+      int yPos = 0;
+      for(final sideLine in rotateMinoModel){
+        int xPos = 0;
+        for(final square in sideLine){
+          if(square != 0){
+            if(fixMinoArrangement[yPos + startApplyPosition[1]][xPos + startApplyPosition[0]] != 0){
               return true;
             }
           }
