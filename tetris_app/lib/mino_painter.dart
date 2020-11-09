@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+/// ミノを描画
 class MinoPainter extends CustomPainter {
 
   List<List<int>> minoArrangement = [
@@ -85,7 +86,7 @@ class MinoPainter extends CustomPainter {
   }
 }
 
-
+/// 枠線を描画
 class BoaderPainter extends CustomPainter {
 
   @override
@@ -104,6 +105,39 @@ class BoaderPainter extends CustomPainter {
     }
 
   }
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) {
+    return true;
+  }
+}
+
+/// 落下予測位置を描画
+class PredictedFallPosition extends CustomPainter {
+  List<List<int>> fallCurrentMinoArrangement = [];
+  PredictedFallPosition(this.fallCurrentMinoArrangement);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    double vertical = size.height / 20; /// 1マスの縦
+    double side = size.width / 10;      /// 1マスの横
+    var paint = Paint();
+    paint.color = Colors.redAccent;
+    paint.style = PaintingStyle.stroke;
+    paint.strokeWidth = 5;
+
+    double yPos = 0;
+    for (final sideLine in fallCurrentMinoArrangement){
+      double xPos = 0;
+      for( final square in sideLine){
+        if(square != 0){
+          canvas.drawRect(Rect.fromLTWH(xPos, yPos , side, vertical), paint); /// 1マス分描画
+          }
+        xPos += side;
+        }
+      yPos += vertical;
+      }
+    }
+
   @override
   bool shouldRepaint(CustomPainter oldDelegate) {
     return true;

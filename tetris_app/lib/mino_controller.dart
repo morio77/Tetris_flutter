@@ -40,6 +40,9 @@ class MinoState extends ChangeNotifier{
   /// 現在落下中のミノ（カレントミノ）
   List<List<int>> currentMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
 
+  /// カレントミノの落下予測位置
+  List<List<int>> fallCurrentMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
+
   void startTimer(int millisecond) {
       timer = timer == null ? Timer.periodic(Duration(milliseconds: millisecond), _mainRoop,) : timer;
   }
@@ -52,6 +55,7 @@ class MinoState extends ChangeNotifier{
     timer.cancel();
     fixMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
     currentMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
+    fallCurrentMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
     notifyListeners();
     isGameOver = false;
     timer = null;
@@ -66,6 +70,7 @@ class MinoState extends ChangeNotifier{
     if(currentMinoArrangement.every((element) => element.every((element) => element == 0))){
       // ミノを作成して、落下中のミノ配置図（カレントミノ）に反映する
       _createMinoAndReflectCurrentMino();
+      _calcCurrentMinoFallPosition(); // 落下予測位置計算
     }
     /// カレントミノが落下中で1マス落としても衝突しないなら、1マス落とす
     else {
@@ -318,12 +323,15 @@ class MinoState extends ChangeNotifier{
       });
     }
 
+    _calcCurrentMinoFallPosition(); // 落下予測位置計算
+
     notifyListeners();
     return true;
   }
 
   /// =====================
-  /// カレントミノを右に90度回転する
+  /// カレントミノを左右に90度回転する
+  /// rotateArg：右回転なら90、左回転なら270を指定
   /// return：動かせたらtrue、動かせなかったらfalse
   /// =====================
   bool rotateRightCurrentMino(int rotateArg) {
@@ -415,6 +423,7 @@ class MinoState extends ChangeNotifier{
     }
 
     currentMinoArg = argAfterRotation;
+    _calcCurrentMinoFallPosition(); // 落下予測位置計算
     notifyListeners();
     return true;
   }
@@ -473,6 +482,67 @@ class MinoState extends ChangeNotifier{
     return false;
   }
 
+
+
+  /// =====================
+  /// カレントミノの落下予測位置を計算
+  /// =====================
+  void _calcCurrentMinoFallPosition() {
+    // カレントミノを1マス下げてみて、下端・フィックスミノにぶつからないなら、1マス下げる
+    // ぶつかるまでループして、ぶつかったら、そこが落下予測位置
+
+    /// まず、カレントミノをコピーしておく。
+    int yPos = 0;
+    for (final sideLine in currentMinoArrangement){
+      int xPos = 0;
+      for( final square in sideLine){
+        fallCurrentMinoArrangement[yPos][xPos] = square;
+        xPos++;
+      }
+      yPos++;
+    }
+
+    /// ここからループ開始
+    bool isDoneCalc = false;
+    int roopCount = 0;
+    while(isDoneCalc != true){
+      debugPrint(roopCount.toString());
+      try{
+
+        // 落下予測位置を1マス下げたマスが、フィックスミノとぶつかるなら終了
+        int yPos = 0;
+        for (final sideLine in fallCurrentMinoArrangement){
+          int xPos = 0;
+          for( final square in sideLine){
+            if(square != 0){
+              if(fixMinoArrangement[yPos + 1][xPos] != 0){
+                isDoneCalc = true;
+              }
+            }
+            xPos++;
+          }
+          yPos++;
+        }
+
+        if(isDoneCalc == false){
+          // 落下予測位置を1マス下げる
+          fallCurrentMinoArrangement.insert(0, [0,0,0,0,0,0,0,0,0,0,]);
+          fallCurrentMinoArrangement.removeLast();
+        }
+
+        roopCount++;
+        if(roopCount >= fallCurrentMinoArrangement.length){
+          isDoneCalc = true;
+        }
+      }
+      catch(e) {
+        debugPrint(e.toString());
+        isDoneCalc = true;
+      }
+    }
+
+    notifyListeners();
+  }
 }
 
 class MinoController extends StatelessWidget {
@@ -492,6 +562,7 @@ class TetrisPage extends StatelessWidget {
     final Size displaySize = MediaQuery.of(context).size;
     final double height = displaySize.height * 0.7;
     final double width = height * 0.5;
+    final double opacity = 0.1;
     return Scaffold(
       appBar: AppBar(
         title: Text(Provider.of<MinoState>(context, listen: true).currentMinoType.toString() + "：" + Provider.of<MinoState>(context, listen: true).currentMinoArg.toString()),
@@ -499,15 +570,13 @@ class TetrisPage extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.restaurant),
             onPressed: () {
-              Provider.of<MinoState>(context, listen: false).startTimer(150);
-              // Provider.of<MinoState>(context, listen: false).rotateRight("ss");
+              Provider.of<MinoState>(context, listen: false).startTimer(175);
             },
           ),
           IconButton(
             icon: Icon(Icons.refresh),
             onPressed: () {
               Provider.of<MinoState>(context, listen: false).reset();
-              // Provider.of<MinoState>(context, listen: false).rotateRight("ss");
             },
           ),
         ],
@@ -551,7 +620,7 @@ class TetrisPage extends StatelessWidget {
         child: Stack(
           children: [
             Container(
-              color: Colors.grey.withOpacity(0.3),
+              color: Colors.grey.withOpacity(opacity),
               height: height,
               width: width,
               child: CustomPaint( /// 枠線を描画
@@ -559,7 +628,7 @@ class TetrisPage extends StatelessWidget {
               ),
             ),
             Container(
-              color: Colors.grey.withOpacity(0.3),
+              color: Colors.grey.withOpacity(opacity),
               height: height,
               width: width,
               child: CustomPaint( /// フィックスしたミノ配置図
@@ -567,11 +636,19 @@ class TetrisPage extends StatelessWidget {
               ),
             ),
             Container(
-              color: Colors.grey.withOpacity(0.3),
+              color: Colors.grey.withOpacity(opacity),
               height: height,
               width: width,
               child: CustomPaint( /// 落下中のミノ配置図
                 painter: MinoPainter(Provider.of<MinoState>(context, listen: true).currentMinoArrangement),
+              ),
+            ),
+            Container(
+              color: Colors.grey.withOpacity(opacity),
+              height: height,
+              width: width,
+              child: CustomPaint( /// 落下予測位置を描画
+                painter: PredictedFallPosition(Provider.of<MinoState>(context, listen: true).fallCurrentMinoArrangement),
               ),
             ),
           ],
