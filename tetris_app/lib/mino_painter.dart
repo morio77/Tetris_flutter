@@ -84,3 +84,28 @@ class MinoPainter extends CustomPainter {
     return true;
   }
 }
+
+
+class BoaderPainter extends CustomPainter {
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    double vertical = size.height / 20; /// 1マスの縦
+    double side = size.width / 10;      /// 1マスの横
+
+    // 横線
+    for(double y = 0; y < size.height ; y += vertical){
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), Paint());
+    }
+
+    // 縦線
+    for(double x = 0; x < size.width ; x += side){
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), Paint());
+    }
+
+  }
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) {
+    return true;
+  }
+}

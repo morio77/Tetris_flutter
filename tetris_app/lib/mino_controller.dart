@@ -473,289 +473,6 @@ class MinoState extends ChangeNotifier{
     return false;
   }
 
-  /// =====================
-  /// 回転させたら、カレントミノが左端に衝突するか？
-  /// =====================
-  bool _isCollideLeftWhenRotate(int xPos, int yPos, List<int> relativePosition, List<List<int>> rotateMinoModel) {
-    if(xPos - relativePosition[0] < 0){
-      return true;
-    }
-    else{
-      return false;
-    }
-  }
-
-  /// =====================
-  /// 回転させたら、カレントミノが右端に衝突するか？
-  /// =====================
-  bool _isCollideRightWhenRotate(int xPos, int yPos, List<int> relativePosition, List<List<int>> rotateMinoModel) {
-    // カレントミノの0以外の初めての位indexの列番号から適用開始位置を算出して、
-    // 回転後のミノの列数を足したものがフィールドからはみ出たら(10を超えたら) false
-    if(xPos - relativePosition[0] + rotateMinoModel[0].length > currentMinoArrangement[0].length){
-      return true;
-    }
-    else{
-      return false;
-    }
-  }
-
-  /// =====================
-  /// 回転させたら、カレントミノがフィックスミノに衝突するか？
-  /// =====================
-  bool _isCollideFixMinoWhenRotate(int xPos, int yPos, List<int> relativePosition, List<List<int>> rotateMinoModel) {
-    int applyStartXPos = xPos + relativePosition[0];
-    int applyStartYPos = yPos + relativePosition[1];
-    int adjustYPos = 0; // 適用開始位置からの相対xPos
-    try {
-      for(final sideLine in rotateMinoModel){
-        int adjustXPos = 0; // 適用開始位置からの相対yPos
-        for(final square in sideLine){
-          if(square != 0 && fixMinoArrangement[applyStartYPos + adjustYPos][applyStartXPos + adjustXPos] != 0){
-            return true;
-          }
-          adjustXPos++;
-        }
-        adjustYPos++;
-      }
-    } catch (e) {
-      // インデックスエラーとかでエラーしたら回転不可（なんとかせねばなー）
-      return true;
-    }
-    return false;
-  }
-
-  // /// =====================
-  // /// カレントミノを回転させられるか確認して、回転したミノ配置できるカレントミノからの相対位置を返す
-  // /// ToDo：SRSで回せるならどのパターンで回せるかを返す
-  // /// Memo：https://tetrisch.github.io/main/srs.html
-  // /// =====================
-  // List<int> _getRotateMinoPosition(List<List<int>> rotateMinoModel, int rotateArg,) {
-  //   // カレントミノを先頭から検査して、初めて0以外があった位置から、決められた相対位置に回転後のミノを適用してみる
-  //   // （下端・左右端・上端・フィックスミノにぶつからないかチェックするべき）
-  //   // 適用する相対位置は、ミノタイプと今のミノの角度から算出する（のちのちSRSもこのシステムでいけるかも）
-  //
-  //   List<int> result;
-  //
-  //   // まずは右回転だけで考える
-  //   switch(currentMinoType){
-  //     case 1:
-  //     // Iミノ
-  //       switch(currentMinoArg){
-  //         case 0:
-  //           result = [2,-1];
-  //           break;
-  //         case 90:
-  //           result = [-2,2];
-  //           break;
-  //         case 180:
-  //           result = [1,-2];
-  //           break;
-  //         case 270:
-  //           result = [-1,1];
-  //           break;
-  //       }
-  //       break;
-  //     case 3:
-  //     // Sミノ
-  //       switch(currentMinoArg){
-  //         case 0:
-  //           result = [0,0];
-  //           break;
-  //         case 90:
-  //           result = [0,1];
-  //           break;
-  //         case 180:
-  //           result = [-1,-1];
-  //           break;
-  //         case 270:
-  //           result = [1,0];
-  //           break;
-  //       }
-  //       break;
-  //
-  //     case 4:
-  //     // Zミノ
-  //       switch(currentMinoArg){
-  //         case 0:
-  //           result = [2,0];
-  //           break;
-  //         case 90:
-  //           result = [-2,1];
-  //           break;
-  //         case 180:
-  //           result = [1,-1];
-  //           break;
-  //         case 270:
-  //           result = [-1,0];
-  //           break;
-  //       }
-  //       break;
-  //
-  //     case 5:
-  //     // Jミノ
-  //       switch(currentMinoArg){
-  //         case 0:
-  //           result = [1,0];
-  //           break;
-  //         case 90:
-  //           result = [-1,1];
-  //           break;
-  //         case 180:
-  //           result = [1,-1];
-  //           break;
-  //         case 270:
-  //           result = [-1,0];
-  //           break;
-  //       }
-  //       break;
-  //
-  //     case 6:
-  //     // Lミノ
-  //       switch(currentMinoArg){
-  //         case 0:
-  //           result = [-1,0];
-  //           break;
-  //         case 90:
-  //           result = [-1,1];
-  //           break;
-  //         case 180:
-  //           result = [0,-1];
-  //           break;
-  //         case 270:
-  //           result = [2,0];
-  //           break;
-  //       }
-  //       break;
-  //
-  //     case 7:
-  //     // Tミノ
-  //       switch(currentMinoArg){
-  //         case 0:
-  //           result = [0,0];
-  //           break;
-  //         case 90:
-  //           result = [-1,1];
-  //           break;
-  //         case 180:
-  //           result = [1,-1];
-  //           break;
-  //         case 270:
-  //           result = [0,0];
-  //           break;
-  //       }
-  //       break;
-  //   }
-  //
-  //   /// 適用してみて、いけるならその値を返す。無理ならresultをクリアして返す
-  //   /// ToDo 無理でも、SRSを試してみる。
-  //   int yPos = 0;
-  //   for(final sideLine in currentMinoArrangement){
-  //     int xPos = 0;
-  //     for(final square in sideLine){
-  //       if(square != 0){ // ここがカレントミノの初めての0以外の位置
-  //         if( _isCollideBottomWhenRotate(xPos, yPos, result, rotateMinoModel ) == true || // 回転後のカレントミノが下端にぶつからないか検査
-  //             _isCollideLeftWhenRotate(xPos, yPos, result, rotateMinoModel)    == true || // 回転後のカレントミノが左端にぶつからないか検査
-  //             _isCollideRightWhenRotate(xPos, yPos, result, rotateMinoModel)   == true || // 回転後のカレントミノが右端にぶつからないか検査
-  //             _isCollideFixMinoWhenRotate(xPos, yPos, result, rotateMinoModel) == true    // 回転後のカレントミノがフィックスミノにぶつからないか検査
-  //         ) {
-  //           // 回転させたら衝突するので、resultをクリアしてreturn
-  //           result.clear();
-  //           return result;
-  //         }
-  //         else{
-  //           // 回転しても衝突しない
-  //           return result;
-  //         }
-  //       }
-  //       xPos++;
-  //     }
-  //     yPos++;
-  //   }
-  // }
-
-  // /// =====================
-  // /// 回転させたら、カレントミノが下端に衝突するか？
-  // /// xPos：カレントミノの0以外の初めてのindexの列番号
-  // /// yPos：カレントミノの0以外の初めてのindexの行番号
-  // /// relativePosition：回転後のミノをカレントミノの0意外の先頭位置からどこに適用するか
-  // /// =====================
-  // bool _isCollideBottomWhenRotate(int xPos, int yPos, List<int> relativePosition, List<List<int>> rotateMinoModel) {
-  //   if (yPos + relativePosition[1] + rotateMinoModel.length > currentMinoArrangement.length){
-  //     return true;
-  //   }
-  //   else {
-  //     return false;
-  //   }
-  // }
-  //
-  // /// =====================
-  // /// 回転させたら、カレントミノが左端に衝突するか？
-  // /// xPos：カレントミノの0以外の初めてのindexの列番号
-  // /// yPos：カレントミノの0以外の初めてのindexの行番号
-  // /// relativePosition：回転後のミノをカレントミノの0意外の先頭位置からどこに適用するか
-  // /// =====================
-  // bool _isCollideLeftWhenRotate(int xPos, int yPos, List<int> relativePosition, List<List<int>> rotateMinoModel) {
-  //   if(xPos - relativePosition[0] < 0){
-  //     return true;
-  //   }
-  //   else{
-  //     return false;
-  //   }
-  // }
-  //
-  // /// =====================
-  // /// 回転させたら、カレントミノが右端に衝突するか？
-  // /// xPos：カレントミノの0以外の初めてのindexの列番号
-  // /// yPos：カレントミノの0以外の初めてのindexの行番号
-  // /// relativePosition：回転後のミノをカレントミノの0意外の先頭位置からどこに適用するか
-  // /// =====================
-  // bool _isCollideRightWhenRotate(int xPos, int yPos, List<int> relativePosition, List<List<int>> rotateMinoModel) {
-  //   // カレントミノの0以外の初めての位indexの列番号から適用開始位置を算出して、
-  //   // 回転後のミノの列数を足したものがフィールドからはみ出たら(10を超えたら) false
-  //   if(xPos - relativePosition[0] + rotateMinoModel[0].length > currentMinoArrangement[0].length){
-  //     return true;
-  //   }
-  //   else{
-  //     return false;
-  //   }
-  // }
-  //
-  // /// =====================
-  // /// 回転させたら、カレントミノがフィックスミノに衝突するか？
-  // /// xPos：カレントミノの0以外の初めてのindexの列番号
-  // /// yPos：カレントミノの0以外の初めてのindexの行番号
-  // /// relativePosition：回転後のミノをカレントミノの0意外の先頭位置からどこに適用するか
-  // /// =====================
-  // bool _isCollideFixMinoWhenRotate(int xPos, int yPos, List<int> relativePosition, List<List<int>> rotateMinoModel) {
-  //   int applyStartXPos = xPos + relativePosition[0];
-  //   int applyStartYPos = yPos + relativePosition[1];
-  //   int adjustYPos = 0; // 適用開始位置からの相対xPos
-  //   try {
-  //     for(final sideLine in rotateMinoModel){
-  //       int adjustXPos = 0; // 適用開始位置からの相対yPos
-  //       for(final square in sideLine){
-  //         if(square != 0 && fixMinoArrangement[applyStartYPos + adjustYPos][applyStartXPos + adjustXPos] != 0){
-  //           return true;
-  //         }
-  //         adjustXPos++;
-  //       }
-  //       adjustYPos++;
-  //     }
-  //   } catch (e) {
-  //     // インデックスエラーとかでエラーしたら回転不可（なんとかせねばなー）
-  //     return true;
-  //   }
-  //   return false;
-  // }
-
-  /// =====================
-  /// カレントミノを左に90度回転する
-  /// return：動かせたらtrue、動かせなかったらfalse
-  /// =====================
-  bool rotateLeftCurrentMino() {
-    // カレントミノのタイプを取得
-
-  }
 }
 
 class MinoController extends StatelessWidget {
@@ -772,9 +489,6 @@ class TetrisPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
-    // Provider.of<MinoState>(context, listen: false).startTimer(2000);
-
     final Size displaySize = MediaQuery.of(context).size;
     final double height = displaySize.height * 0.7;
     final double width = height * 0.5;
@@ -785,7 +499,7 @@ class TetrisPage extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.restaurant),
             onPressed: () {
-              Provider.of<MinoState>(context, listen: false).startTimer(225);
+              Provider.of<MinoState>(context, listen: false).startTimer(150);
               // Provider.of<MinoState>(context, listen: false).rotateRight("ss");
             },
           ),
@@ -836,6 +550,14 @@ class TetrisPage extends StatelessWidget {
       body: Center(
         child: Stack(
           children: [
+            Container(
+              color: Colors.grey.withOpacity(0.3),
+              height: height,
+              width: width,
+              child: CustomPaint( /// 枠線を描画
+                painter: BoaderPainter(),
+              ),
+            ),
             Container(
               color: Colors.grey.withOpacity(0.3),
               height: height,
