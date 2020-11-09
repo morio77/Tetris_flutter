@@ -506,7 +506,6 @@ class MinoState extends ChangeNotifier{
     bool isDoneCalc = false;
     int roopCount = 0;
     while(isDoneCalc != true){
-      debugPrint(roopCount.toString());
       try{
 
         // 落下予測位置を1マス下げたマスが、フィックスミノとぶつかるなら終了
@@ -536,7 +535,6 @@ class MinoState extends ChangeNotifier{
         }
       }
       catch(e) {
-        debugPrint(e.toString());
         isDoneCalc = true;
       }
     }
@@ -563,6 +561,7 @@ class TetrisPage extends StatelessWidget {
     final double height = displaySize.height * 0.7;
     final double width = height * 0.5;
     final double opacity = 0.1;
+    final double horizontalDragThreshold= 5;
     return Scaffold(
       appBar: AppBar(
         title: Text(Provider.of<MinoState>(context, listen: true).currentMinoType.toString() + "：" + Provider.of<MinoState>(context, listen: true).currentMinoArg.toString()),
@@ -592,22 +591,6 @@ class TetrisPage extends StatelessWidget {
             },
           ),
           FloatingActionButton(
-            heroTag: "rotateLeft",
-            // child: Text("左回転"),
-            child: Icon(Icons.rotate_left),
-            onPressed: () {
-              Provider.of<MinoState>(context, listen: false).rotateRightCurrentMino(270);
-            },
-          ),
-          FloatingActionButton(
-            heroTag: "rotateRight",
-            // child: Text("右回転"),
-            child: Icon(Icons.rotate_right),
-            onPressed: () {
-              Provider.of<MinoState>(context, listen: false).rotateRightCurrentMino(90);
-            },
-          ),
-          FloatingActionButton(
             heroTag: "moveRight",
             child: Icon(Icons.arrow_right),
             onPressed: () {
@@ -616,43 +599,72 @@ class TetrisPage extends StatelessWidget {
           ),
         ],
       ),
-      body: Center(
-        child: Stack(
-          children: [
-            Container(
-              color: Colors.grey.withOpacity(opacity),
-              height: height,
-              width: width,
-              child: CustomPaint( /// 枠線を描画
-                painter: BoaderPainter(),
-              ),
+      body: Stack(
+        children: [
+          Center(
+            child: Stack(
+              children: [
+                Container(
+                  color: Colors.grey.withOpacity(opacity),
+                  height: height,
+                  width: width,
+                  child: CustomPaint( /// 枠線を描画
+                    painter: BoaderPainter(),
+                  ),
+                ),
+                Container(
+                  color: Colors.grey.withOpacity(opacity),
+                  height: height,
+                  width: width,
+                  child: CustomPaint( /// フィックスしたミノ配置図
+                    painter: MinoPainter(Provider.of<MinoState>(context, listen: true).fixMinoArrangement),
+                  ),
+                ),
+                Container(
+                  color: Colors.grey.withOpacity(opacity),
+                  height: height,
+                  width: width,
+                  child: CustomPaint( /// 落下中のミノ配置図
+                    painter: MinoPainter(Provider.of<MinoState>(context, listen: true).currentMinoArrangement),
+                  ),
+                ),
+                Container(
+                  color: Colors.grey.withOpacity(opacity),
+                  height: height,
+                  width: width,
+                  child: CustomPaint( /// 落下予測位置を描画
+                    painter: PredictedFallPosition(Provider.of<MinoState>(context, listen: true).fallCurrentMinoArrangement),
+                  ),
+                ),
+              ],
             ),
-            Container(
-              color: Colors.grey.withOpacity(opacity),
-              height: height,
-              width: width,
-              child: CustomPaint( /// フィックスしたミノ配置図
-                painter: MinoPainter(Provider.of<MinoState>(context, listen: true).fixMinoArrangement),
-              ),
+          ),
+          Container(
+            height: displaySize.height,
+            width: displaySize.width,
+            child: GestureDetector(
+                onTapUp: (details) { /// タップで回転させる
+                  if(details.globalPosition.dx < displaySize.width * 0.5){
+                    Provider.of<MinoState>(context, listen: false).rotateRightCurrentMino(270);
+                  }
+                  else {
+                    Provider.of<MinoState>(context, listen: false).rotateRightCurrentMino(90);
+                  }
+                },
+                onHorizontalDragUpdate: (details) {
+                  debugPrint(details.delta.dx.toString());
+                  if(details.delta.dx.abs() > horizontalDragThreshold){
+                    if(details.delta.dx < 0){
+                      Provider.of<MinoState>(context, listen: false).moveCurrentMinoHorizon(-1);
+                    }
+                    else {
+                      Provider.of<MinoState>(context, listen: false).moveCurrentMinoHorizon(1);
+                    }
+                  }
+                }
             ),
-            Container(
-              color: Colors.grey.withOpacity(opacity),
-              height: height,
-              width: width,
-              child: CustomPaint( /// 落下中のミノ配置図
-                painter: MinoPainter(Provider.of<MinoState>(context, listen: true).currentMinoArrangement),
-              ),
-            ),
-            Container(
-              color: Colors.grey.withOpacity(opacity),
-              height: height,
-              width: width,
-              child: CustomPaint( /// 落下予測位置を描画
-                painter: PredictedFallPosition(Provider.of<MinoState>(context, listen: true).fallCurrentMinoArrangement),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
