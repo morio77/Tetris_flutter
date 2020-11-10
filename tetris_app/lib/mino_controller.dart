@@ -714,8 +714,16 @@ class TetrisPage extends StatelessWidget {
                     Provider.of<MinoState>(context, listen: false).hardDropFlag = true;
                   }
               },
-              // onLongPress: () => ソフトドロップON,
-              // onLongPressEnd: () => ソフトドロップOFF,
+              onLongPress: () { /// ソフトドロップON
+                Provider.of<MinoState>(context, listen: false).timer.cancel();
+                Provider.of<MinoState>(context, listen: false).timer = null;
+                Provider.of<MinoState>(context, listen: false).startTimer(50);
+              },
+              onLongPressEnd: (details) { /// ソフトドロップOFF
+                Provider.of<MinoState>(context, listen: false).timer.cancel();
+                Provider.of<MinoState>(context, listen: false).timer = null;
+                Provider.of<MinoState>(context, listen: false).startTimer(250);
+              },
             ),
           ),
         ],
