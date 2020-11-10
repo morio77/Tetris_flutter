@@ -43,6 +43,8 @@ class MinoState extends ChangeNotifier{
   /// カレントミノの落下予測位置
   List<List<int>> fallCurrentMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
 
+  bool hardDropFlag = false;
+
   void startTimer(int millisecond) {
       timer = timer == null ? Timer.periodic(Duration(milliseconds: millisecond), _mainRoop,) : timer;
   }
@@ -64,13 +66,19 @@ class MinoState extends ChangeNotifier{
   /// =====================
   /// メインループ 始まり
   /// =====================
-  void _mainRoop(Timer timer){
+  void _mainRoop(Timer timer) {
 
     /// カレントミノがすべて0だったら、ミノを作成して、落下中のミノ配置図（カレントミノ）に反映する
     if(currentMinoArrangement.every((element) => element.every((element) => element == 0))){
       // ミノを作成して、落下中のミノ配置図（カレントミノ）に反映する
       _createMinoAndReflectCurrentMino();
       _calcCurrentMinoFallPosition(); // 落下予測位置計算
+      hardDropFlag = false; // ハードドロップフラグをOFFにしておく
+    }
+    /// ハードドロップフラグが立っていたらハードドロップしてあげる
+    else if (hardDropFlag == true){
+      _hardDrop();
+      hardDropFlag = false;
     }
     /// カレントミノが落下中で1マス落としても衝突しないなら、1マス落とす
     else {
@@ -541,6 +549,31 @@ class MinoState extends ChangeNotifier{
 
     notifyListeners();
   }
+
+  /// =====================
+  /// ハードドロップする
+  /// =====================
+  void _hardDrop() {
+    // カレントミノを落下予測位置に落とすだけ。
+    int yPos = 0;
+    for (final sideLine in fallCurrentMinoArrangement){
+      int xPos = 0;
+      for( final square in sideLine){
+        currentMinoArrangement[yPos][xPos] = square;
+        xPos++;
+      }
+      yPos++;
+    }
+    // カレントミノをフィックスミノに反映
+    _reflectCurrentMinoInFixMino();
+
+    // フィックスミノの行がそろっていたら行を消す
+    _deleteFixMinoSideLineIfPossible();
+
+    // カレントミノを0でクリア
+    currentMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
+    notifyListeners();
+  }
 }
 
 class MinoController extends StatelessWidget {
@@ -561,7 +594,8 @@ class TetrisPage extends StatelessWidget {
     final double height = displaySize.height * 0.7;
     final double width = height * 0.5;
     final double opacity = 0.1;
-    final double horizontalDragThreshold= 5;
+    final double horizontalDragThreshold= 2;
+    final double verticalDragDownThreshold= 3;
     return Scaffold(
       appBar: AppBar(
         title: Text(Provider.of<MinoState>(context, listen: true).currentMinoType.toString() + "：" + Provider.of<MinoState>(context, listen: true).currentMinoArg.toString()),
@@ -576,25 +610,6 @@ class TetrisPage extends StatelessWidget {
             icon: Icon(Icons.refresh),
             onPressed: () {
               Provider.of<MinoState>(context, listen: false).reset();
-            },
-          ),
-        ],
-      ),
-      floatingActionButton: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          FloatingActionButton(
-            heroTag: "moveLeft",
-            child: Icon(Icons.arrow_left),
-            onPressed: () {
-              Provider.of<MinoState>(context, listen: false).moveCurrentMinoHorizon(-1);
-            },
-          ),
-          FloatingActionButton(
-            heroTag: "moveRight",
-            child: Icon(Icons.arrow_right),
-            onPressed: () {
-              Provider.of<MinoState>(context, listen: false).moveCurrentMinoHorizon(1);
             },
           ),
         ],
@@ -651,8 +666,7 @@ class TetrisPage extends StatelessWidget {
                     Provider.of<MinoState>(context, listen: false).rotateRightCurrentMino(90);
                   }
                 },
-                onHorizontalDragUpdate: (details) {
-                  debugPrint(details.delta.dx.toString());
+                onHorizontalDragUpdate: (details) { /// ドラッグで左右移動
                   if(details.delta.dx.abs() > horizontalDragThreshold){
                     if(details.delta.dx < 0){
                       Provider.of<MinoState>(context, listen: false).moveCurrentMinoHorizon(-1);
@@ -661,7 +675,14 @@ class TetrisPage extends StatelessWidget {
                       Provider.of<MinoState>(context, listen: false).moveCurrentMinoHorizon(1);
                     }
                   }
-                }
+                },
+              onVerticalDragUpdate: (details) { /// ハードドロップ
+                  if(details.delta.dy > verticalDragDownThreshold){
+                    Provider.of<MinoState>(context, listen: false).hardDropFlag = true;
+                  }
+              },
+              // onLongPress: () => ソフトドロップON,
+              // onLongPressEnd: () => ソフトドロップOFF,
             ),
           ),
         ],
