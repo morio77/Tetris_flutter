@@ -11,6 +11,10 @@ class MinoState extends ChangeNotifier{
   bool isGameOver = false;
   int currentMinoType;
   int currentMinoArg;
+  bool hardDropFlag = false;
+  double cumulativeLeftDrag = 0; // 左ドラッグした累積距離（左右移動の判定に使う）
+  double cumulativeRightDrag = 0; // 右ドラッグした累積距離（左右移動の判定に使う）
+
   /// 落下して位置が決まったすべてのミノ（フィックスミノ）
   List<List<int>> fixMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
   // ↓こんな感じなのができる
@@ -42,8 +46,6 @@ class MinoState extends ChangeNotifier{
 
   /// カレントミノの落下予測位置
   List<List<int>> fallCurrentMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
-
-  bool hardDropFlag = false;
 
   void startTimer(int millisecond) {
       timer = timer == null ? Timer.periodic(Duration(milliseconds: millisecond), _mainRoop,) : timer;
@@ -594,7 +596,7 @@ class TetrisPage extends StatelessWidget {
     final double height = displaySize.height * 0.7;
     final double width = height * 0.5;
     final double opacity = 0.1;
-    final double horizontalDragThreshold= 2;
+    final double horizontalDragThreshold= 15;
     final double verticalDragDownThreshold= 3;
     return Scaffold(
       appBar: AppBar(
@@ -603,7 +605,7 @@ class TetrisPage extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.restaurant),
             onPressed: () {
-              Provider.of<MinoState>(context, listen: false).startTimer(175);
+              Provider.of<MinoState>(context, listen: false).startTimer(250);
             },
           ),
           IconButton(
@@ -612,6 +614,23 @@ class TetrisPage extends StatelessWidget {
               Provider.of<MinoState>(context, listen: false).reset();
             },
           ),
+        ],
+      ),
+      floatingActionButton: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children: [
+          RaisedButton(
+            child: Icon(Icons.arrow_back_ios),
+            onPressed: () {
+              Provider.of<MinoState>(context, listen: false).moveCurrentMinoHorizon(-1);
+            },
+          ),
+          RaisedButton(
+            child: Icon(Icons.arrow_forward_ios),
+            onPressed: () {
+              Provider.of<MinoState>(context, listen: false).moveCurrentMinoHorizon(1);
+            },
+          )
         ],
       ),
       body: Stack(
@@ -667,15 +686,29 @@ class TetrisPage extends StatelessWidget {
                   }
                 },
                 onHorizontalDragUpdate: (details) { /// ドラッグで左右移動
-                  if(details.delta.dx.abs() > horizontalDragThreshold){
-                    if(details.delta.dx < 0){
-                      Provider.of<MinoState>(context, listen: false).moveCurrentMinoHorizon(-1);
-                    }
-                    else {
-                      Provider.of<MinoState>(context, listen: false).moveCurrentMinoHorizon(1);
-                    }
+                  final double deltaX = details.delta.dx;
+                  if(deltaX < 0){
+                    Provider.of<MinoState>(context, listen: false).cumulativeLeftDrag += deltaX;
                   }
+                  else {
+                    Provider.of<MinoState>(context, listen: false).cumulativeRightDrag += deltaX;
+                  }
+
+                  if(Provider.of<MinoState>(context, listen: false).cumulativeLeftDrag < -horizontalDragThreshold){
+                    Provider.of<MinoState>(context, listen: false).moveCurrentMinoHorizon(-1);
+                    Provider.of<MinoState>(context, listen: false).cumulativeLeftDrag = 0;
+                  }
+
+                  if(Provider.of<MinoState>(context, listen: false).cumulativeRightDrag > horizontalDragThreshold){
+                    Provider.of<MinoState>(context, listen: false).moveCurrentMinoHorizon(1);
+                    Provider.of<MinoState>(context, listen: false).cumulativeRightDrag = 0;
+                  }
+
                 },
+              onHorizontalDragEnd: (details) { /// ドラッグ中にが離れたら、累積左右移動距離を0にしておく
+                Provider.of<MinoState>(context, listen: false).cumulativeLeftDrag = 0;
+                Provider.of<MinoState>(context, listen: false).cumulativeRightDrag = 0;
+              },
               onVerticalDragUpdate: (details) { /// ハードドロップ
                   if(details.delta.dy > verticalDragDownThreshold){
                     Provider.of<MinoState>(context, listen: false).hardDropFlag = true;
