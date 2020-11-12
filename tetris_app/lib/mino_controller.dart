@@ -14,6 +14,7 @@ class MinoState extends ChangeNotifier{
   bool hardDropFlag = false;
   double cumulativeLeftDrag = 0; // 左ドラッグした累積距離（左右移動の判定に使う）
   double cumulativeRightDrag = 0; // 右ドラッグした累積距離（左右移動の判定に使う）
+  List<List<int>> currentMinoManager = []; // カレントミノのタイプと角度を順番に保持しておく
 
   /// 落下して位置が決まったすべてのミノ（フィックスミノ）
   List<List<int>> fixMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
@@ -63,6 +64,18 @@ class MinoState extends ChangeNotifier{
     notifyListeners();
     isGameOver = false;
     timer = null;
+  }
+
+  void generateSevenMinos() {
+    // 7種1巡の法則に従ってミノタイプとミノ角度を生成
+    List<List<int>> sevenMinos = [];
+    for(int i = 1 ; i <= 7 ; i++){
+      sevenMinos.add([i, (math.Random().nextInt(4) + 0) * 90]);
+    }
+    sevenMinos.shuffle();
+    sevenMinos.forEach((mino) {
+      currentMinoManager.add(mino);
+    });
   }
 
   /// =====================
@@ -122,23 +135,30 @@ class MinoState extends ChangeNotifier{
   /// =====================
   void _createMinoAndReflectCurrentMino() {
 
-    /// ミノ作成（タイプと角度をランダムに）
-    currentMinoType = math.Random().nextInt(7) + 1; // ミノのタイプ
-    currentMinoArg = (math.Random().nextInt(4) + 1) * 90; // ミノの初期角度
+    // /// ミノ作成（タイプと角度をランダムに）
+    // currentMinoType = math.Random().nextInt(7) + 1; // ミノのタイプ
+    // currentMinoArg = (math.Random().nextInt(4) + 1) * 90; // ミノの初期角度
+
+    currentMinoType = currentMinoManager[0][0];
+    currentMinoArg = currentMinoManager[0][1];
 
     /// ミノモデルから配列を取得
     List<List<int>> minoModel = minoModelGenerater.generate(currentMinoType, currentMinoArg);
-
-    /// ミノモデルの行がすべて0の行を削除しておく
-    int deleteLineNumber = 0;
-    minoModel.forEach((sideLine) {
-      if(sideLine.every((square) => square == 0)){
-        deleteLineNumber++;
-      }
-    });
-    for(int i = 0; i < deleteLineNumber ; i++){
-      minoModel.removeAt(i);
+    currentMinoManager.removeAt(0);
+    if(currentMinoManager.length < 14){
+      generateSevenMinos();
     }
+
+    // /// ミノモデルの行がすべて0の行を削除しておく
+    // int deleteLineNumber = 0;
+    // minoModel.forEach((sideLine) {
+    //   if(sideLine.every((square) => square == 0)){
+    //     deleteLineNumber++;
+    //   }
+    // });
+    // for(int i = 0; i < deleteLineNumber ; i++){
+    //   minoModel.removeAt(i);
+    // }
 
     /// 作成したミノを、落下中のミノ配置図（カレントミノ）に反映する
     int lineNumber = 0;
@@ -593,11 +613,18 @@ class TetrisPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Size displaySize = MediaQuery.of(context).size;
-    final double height = displaySize.height * 0.7;
-    final double width = height * 0.5;
+    final double playWindowHeight = displaySize.height * 0.6;
+    final double playWindowWidth = playWindowHeight * 0.5;
+    final double nextHoldWindowHeight = displaySize.height * 0.1;
+    final double nextHoldWindowWidth = nextHoldWindowHeight;
     final double opacity = 0.1;
     final double horizontalDragThreshold= 15;
     final double verticalDragDownThreshold= 3;
+
+    /// ミノを14個生成しておく
+    Provider.of<MinoState>(context, listen: false).generateSevenMinos();
+    Provider.of<MinoState>(context, listen: false).generateSevenMinos();
+
     return Scaffold(
       appBar: AppBar(
         title: Text(Provider.of<MinoState>(context, listen: true).currentMinoType.toString() + "：" + Provider.of<MinoState>(context, listen: true).currentMinoArg.toString()),
@@ -640,38 +667,106 @@ class TetrisPage extends StatelessWidget {
               children: [
                 Container(
                   color: Colors.grey.withOpacity(opacity),
-                  height: height,
-                  width: width,
+                  height: playWindowHeight,
+                  width: playWindowWidth,
                   child: CustomPaint( /// 枠線を描画
                     painter: BoaderPainter(),
                   ),
                 ),
                 Container(
                   color: Colors.grey.withOpacity(opacity),
-                  height: height,
-                  width: width,
+                  height: playWindowHeight,
+                  width: playWindowWidth,
                   child: CustomPaint( /// フィックスしたミノ配置図
                     painter: MinoPainter(Provider.of<MinoState>(context, listen: true).fixMinoArrangement),
                   ),
                 ),
                 Container(
                   color: Colors.grey.withOpacity(opacity),
-                  height: height,
-                  width: width,
+                  height: playWindowHeight,
+                  width: playWindowWidth,
                   child: CustomPaint( /// 落下中のミノ配置図
                     painter: MinoPainter(Provider.of<MinoState>(context, listen: true).currentMinoArrangement),
                   ),
                 ),
                 Container(
                   color: Colors.grey.withOpacity(opacity),
-                  height: height,
-                  width: width,
+                  height: playWindowHeight,
+                  width: playWindowWidth,
                   child: CustomPaint( /// 落下予測位置を描画
                     painter: PredictedFallPosition(Provider.of<MinoState>(context, listen: true).fallCurrentMinoArrangement),
                   ),
                 ),
               ],
             ),
+          ),
+          Stack( /// NEXT,HOLD枠
+            children: [
+              Positioned(
+                left: 10.0,
+                top: 20.0,
+                width: nextHoldWindowWidth,
+                height: nextHoldWindowHeight,
+                child: Container(
+                  height: nextHoldWindowHeight,
+                  width: nextHoldWindowWidth,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.black, width: 1),
+                  ),
+                  child: CustomPaint( /// Holdミノを描画
+
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 10.0,
+                top: 20.0,
+                width: nextHoldWindowWidth,
+                height: nextHoldWindowHeight,
+                child: Container(
+                  height: nextHoldWindowHeight,
+                  width: nextHoldWindowWidth,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.black, width: 1),
+                  ),
+                  child: CustomPaint( /// Next1ミノを描画
+                    painter: NextMinoPainter(Provider.of<MinoState>(context, listen: true).currentMinoManager[0][0], Provider.of<MinoState>(context, listen: true).currentMinoManager[0][1]),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 10.0,
+                top: 20 + nextHoldWindowHeight + 20,
+                width: nextHoldWindowWidth,
+                height: nextHoldWindowHeight,
+                child: Container(
+                  height: nextHoldWindowHeight,
+                  width: nextHoldWindowWidth,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.black, width: 1),
+                  ),
+                  child: CustomPaint( /// Next2ミノを描画
+                    painter: NextMinoPainter(Provider.of<MinoState>(context, listen: true).currentMinoManager[1][0], Provider.of<MinoState>(context, listen: true).currentMinoManager[1][1]),
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 10.0,
+                top: 20.0 +nextHoldWindowHeight + 20 + nextHoldWindowHeight + 20,
+                width: nextHoldWindowWidth,
+                height: nextHoldWindowHeight,
+                child: Container(
+                  height: nextHoldWindowHeight,
+                  width: nextHoldWindowWidth,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.black, width: 1),
+                  ),
+                  child: CustomPaint( /// Next3ミノを描画
+                    painter: NextMinoPainter(Provider.of<MinoState>(context, listen: true).currentMinoManager[2][0], Provider.of<MinoState>(context, listen: true).currentMinoManager[2][1]),
+                  ),
+                ),
+              ),
+            ],
           ),
           Container(
             height: displaySize.height,

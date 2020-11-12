@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tetris_app/mino_model.dart';
 
 /// ミノを描画
 class MinoPainter extends CustomPainter {
@@ -137,6 +138,71 @@ class PredictedFallPosition extends CustomPainter {
       yPos += vertical;
       }
     }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) {
+    return true;
+  }
+}
+
+
+/// Nextミノを描画
+class NextMinoPainter extends CustomPainter {
+  int minoType;
+  int minoArg;
+  NextMinoPainter(this.minoType, this.minoArg);
+
+  List<List<int>> nextMinoModel;
+  @override
+  void paint(Canvas canvas, Size size) {
+    nextMinoModel = minoModelGenerater.generate(minoType, minoArg);
+    double vertical = size.height / 4; /// 1マスの縦
+    double side = size.width / 4;      /// 1マスの横
+    var paint = Paint();
+
+    switch(minoType){
+      case 1:
+      // Iミノ
+        paint.color = Colors.lightBlueAccent;
+        break;
+      case 2:
+      // Oミノ
+        paint.color = Colors.yellowAccent;
+        break;
+      case 3:
+      // Sミノ
+        paint.color = Colors.greenAccent;
+        break;
+      case 4:
+      // Zミノ
+        paint.color = Colors.redAccent;
+        break;
+      case 5:
+      // Jミノ
+        paint.color = Colors.blue;
+        break;
+      case 6:
+      // Lミノ
+        paint.color = Colors.orangeAccent;
+        break;
+      case 7:
+      // Tミノ
+        paint.color = Colors.purpleAccent;
+        break;
+    }
+
+    double yPos = 0;
+    for (final sideLine in nextMinoModel){
+      double xPos = 0;
+      for( final square in sideLine){
+        if(square != 0){
+          canvas.drawRect(Rect.fromLTWH(xPos, yPos , side, vertical), paint); /// 1マス分描画
+        }
+        xPos += side;
+      }
+      yPos += vertical;
+    }
+  }
 
   @override
   bool shouldRepaint(CustomPainter oldDelegate) {
