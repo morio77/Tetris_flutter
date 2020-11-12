@@ -146,11 +146,11 @@ class PredictedFallPosition extends CustomPainter {
 }
 
 
-/// Nextミノを描画
-class NextMinoPainter extends CustomPainter {
+/// Next・Holdミノを描画
+class NextOrHoldMinoPainter extends CustomPainter {
   int minoType;
   int minoArg;
-  NextMinoPainter(this.minoType, this.minoArg);
+  NextOrHoldMinoPainter(this.minoType, this.minoArg);
 
   List<List<int>> nextMinoModel;
   @override
