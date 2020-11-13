@@ -18,6 +18,7 @@ class MinoState extends ChangeNotifier{
   double cumulativeRightDrag = 0; // 右ドラッグした累積距離（左右移動の判定に使う）
   List<List<int>> currentMinoManager = []; // カレントミノのタイプと角度を順番に保持しておく
   List<int> holdMino = [];
+  bool isDoneChangeHoldMino = false;
 
   /// 落下して位置が決まったすべてのミノ（フィックスミノ）
   List<List<int>> fixMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
@@ -240,6 +241,8 @@ class MinoState extends ChangeNotifier{
       });
       xPos++;
     });
+
+    isDoneChangeHoldMino = false; // Holdミノと一度でも交換したかフラグをリセット
   }
 
   /// =====================
@@ -617,40 +620,51 @@ class MinoState extends ChangeNotifier{
       // ミノを作成して、落下中のミノ配置図（カレントミノ）に反映する
       _createMinoAndReflectCurrentMino();
       _calcCurrentMinoFallPosition(); // 落下予測位置計算
+
+      isDoneChangeHoldMino = true;
     }
     else { /// カレントミノとHoldミノを入れ替える
 
-      // 仮作成
-      holdMino.add(currentMinoType);
-      holdMino.add(currentMinoArg);
+      if(isDoneChangeHoldMino == false){
+        // Holdミノ管理変数の末尾にカレントミノのタイプと角度を追加
+        holdMino.add(currentMinoType);
+        holdMino.add(currentMinoArg);
 
-      currentMinoType = holdMino[0];
-      currentMinoArg = holdMino[1];
+        // カレントミノのタイプと角度をHoldミノのものにする
+        currentMinoType = holdMino[0];
+        currentMinoArg = holdMino[1];
 
-      holdMino.removeRange(0, 2);
+        // 上で交換したホールドミノを管理変数から削除
+        holdMino.removeRange(0, 2);
 
-      currentMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
+        currentMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
 
-      /// 作成したミノを、落下中のミノ配置図（カレントミノ）に反映する
-      int lineNumber = 0;
-      int horizontalNumber;
+        /// 作成したミノを、落下中のミノ配置図（カレントミノ）に反映する
+        int lineNumber = 0;
+        int horizontalNumber;
 
-      List<List<int>> minoModel = minoModelGenerater.generate(currentMinoType, currentMinoArg);
+        List<List<int>> minoModel = minoModelGenerater.generate(currentMinoType, currentMinoArg);
 
-      minoModel.forEach((lineList) {
-        horizontalNumber = 4;
-        lineList.forEach((square) {
-          if(currentMinoArrangement[lineNumber][horizontalNumber] == 0){
-            currentMinoArrangement[lineNumber][horizontalNumber] = square;
-          }
-          horizontalNumber++;
+        minoModel.forEach((lineList) {
+          horizontalNumber = 4;
+          lineList.forEach((square) {
+            if(currentMinoArrangement[lineNumber][horizontalNumber] == 0){
+              currentMinoArrangement[lineNumber][horizontalNumber] = square;
+            }
+            horizontalNumber++;
+          });
+          lineNumber++;
         });
-        lineNumber++;
-      });
 
-      
-      _calcCurrentMinoFallPosition(); // 落下予測位置計算
-      notifyListeners();
+        isDoneChangeHoldMino = true;
+        _calcCurrentMinoFallPosition(); // 落下予測位置計算
+        notifyListeners();
+      }
+      else {
+        // isDoneChangeHoldMino が true
+        // 2回目の交換はできない。
+      }
+
 
       // 未来の自分へのメモ：衝突チェックもお忘れずに
     }
@@ -821,7 +835,9 @@ class TetrisPage extends StatelessWidget {
                 height: nextHoldWindowHeight,
                 child: GestureDetector(
                   onTap: () { /// Hold機能
-                    Provider.of<MinoState>(context, listen: false).changeCurrentMinoToHoldMino();
+                    if(Provider.of<MinoState>(context, listen: false).timer != null){
+                      Provider.of<MinoState>(context, listen: false).changeCurrentMinoToHoldMino();
+                    }
                   },
                   child: Container(
                     height: nextHoldWindowHeight,
