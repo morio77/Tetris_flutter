@@ -46,6 +46,30 @@ class MinoState extends ChangeNotifier{
   //   [0,0,0,0,0,0,0,0,0,0,],
   // ];
 
+  // List<List<int>> fixMinoArrangement =
+  // [
+  //   [0,0,0,0,0,0,0,0,0,0,],
+  //   [0,0,0,0,0,0,0,0,0,0,],
+  //   [0,0,0,0,0,0,0,0,0,0,],
+  //   [0,0,0,0,0,0,0,0,0,0,],
+  //   [0,0,0,0,0,0,0,0,0,0,],
+  //   [0,0,0,0,0,0,0,0,0,0,],
+  //   [0,0,0,0,0,0,0,0,0,0,],
+  //   [0,0,0,0,0,0,0,0,0,0,],
+  //   [0,0,0,0,0,0,0,0,0,0,],
+  //   [0,0,0,0,0,0,0,0,0,0,],
+  //   [0,0,0,0,0,0,0,0,0,0,],
+  //   [0,0,0,0,0,0,0,0,0,0,],
+  //   [0,0,0,0,0,0,0,0,0,0,],
+  //   [0,0,0,0,0,0,0,0,0,0,],
+  //   [0,0,1,1,0,0,0,0,0,0,],
+  //   [0,0,0,1,0,0,0,0,0,0,],
+  //   [1,1,0,1,1,0,0,0,0,1,],
+  //   [1,0,0,1,1,1,1,0,0,1,],
+  //   [1,0,0,0,1,1,1,1,1,1,],
+  //   [1,1,0,1,1,1,1,1,1,1,],
+  // ];
+
   /// 現在落下中のミノ（カレントミノ）
   List<List<int>> currentMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
 
@@ -632,7 +656,6 @@ class MinoState extends ChangeNotifier{
       holdMino.add(currentMinoArg);
 
       // カレントミノを更新
-      currentMinoManager.removeAt(0);
       currentMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
 
       // ミノを作成して、落下中のミノ配置図（カレントミノ）に反映する
@@ -723,7 +746,7 @@ class TetrisPage extends StatelessWidget {
           IconButton(
             icon: Icon(Icons.restaurant),
             onPressed: () {
-              Provider.of<MinoState>(context, listen: false).startTimer(250);
+              Provider.of<MinoState>(context, listen: false).startTimer(300);
             },
           ),
           IconButton(
