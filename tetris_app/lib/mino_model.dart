@@ -227,11 +227,13 @@ class minoModelGenerater  {
   }
 
   /// カレントミノの回転軸を取得して返す（Iミノ、Oミノ以外）
-  static getAxisOfRotation(List<List<int>> currentMinoArrangement, int minoType, int minoArg){
+  static List<List<int>> getAxisOfRotationWithSRS(List<List<int>> currentMinoArrangement, int minoType, int minoArg, int rotateArg, int argAfterRotation){
     // ①カレントミノを先頭から検査して、初めの0以外の位置を算出
     // ②ミノタイプとミノ角度から、回転軸までの距離を特定
-    // ③ ①と②より回転軸を計算して返す
+    // ③ ①と②より回転軸を計算する
+    // ④SRSを適用した回転軸リストを構築して返す
 
+    /// まずは通常の回転軸を見つける
     List<int> axisPosition; // [xPos, yPos] 回転軸
     int firstNotZeroXPos;
     int firstNotZeroYPos;
@@ -342,11 +344,44 @@ class minoModelGenerater  {
         break;
     }
     axisPosition = [firstNotZeroXPos + adjust[0], firstNotZeroYPos + adjust[1]];
-    return axisPosition;
+
+    /// ここからSRSを適用した回転軸をリストにつめる
+    List<List<int>> axisPositionListWithSRS = List<List<int>>();
+    axisPositionListWithSRS.add(axisPosition); // 最初の回転軸をadd
+
+    switch(argAfterRotation){
+      case 90:
+        axisPositionListWithSRS.add([axisPositionListWithSRS[0][0] - 1, axisPositionListWithSRS[0][1]]);
+        axisPositionListWithSRS.add([axisPositionListWithSRS[1][0], axisPositionListWithSRS[1][1] - 1]);
+        axisPositionListWithSRS.add([axisPositionListWithSRS[0][0], axisPositionListWithSRS[0][1] - 2]);
+        axisPositionListWithSRS.add([axisPositionListWithSRS[3][0] - 1, axisPositionListWithSRS[3][1]]);
+        break;
+      case 270:
+        axisPositionListWithSRS.add([axisPositionListWithSRS[0][0] + 1, axisPositionListWithSRS[0][1]]);
+        axisPositionListWithSRS.add([axisPositionListWithSRS[1][0], axisPositionListWithSRS[1][1] - 1]);
+        axisPositionListWithSRS.add([axisPositionListWithSRS[0][0], axisPositionListWithSRS[0][1] - 2]);
+        axisPositionListWithSRS.add([axisPositionListWithSRS[3][0] + 1, axisPositionListWithSRS[3][1]]);
+        break;
+      case 0:
+      case 180:
+        int adjustXPos;
+        if(rotateArg == 90){ // 右回転しようとしたとき
+          adjustXPos = -1;
+        } else if (rotateArg == 270){ // 左回転しようとしたとき
+          adjustXPos = 1;
+        }
+      axisPositionListWithSRS.add([axisPositionListWithSRS[0][0] + adjustXPos, axisPositionListWithSRS[0][1]]);
+      axisPositionListWithSRS.add([axisPositionListWithSRS[1][0], axisPositionListWithSRS[1][1] + 1]);
+      axisPositionListWithSRS.add([axisPositionListWithSRS[0][0], axisPositionListWithSRS[0][1] + 2]);
+      axisPositionListWithSRS.add([axisPositionListWithSRS[3][0] + adjustXPos, axisPositionListWithSRS[3][1]]);
+        break;
+    }
+
+    return axisPositionListWithSRS;
   }
 
   /// カレントミノの回転軸を取得して返す（Iミノのみ）
-  static getStartApplyPositionOfRotation(List<List<int>> currentMinoArrangement, int minoArg){
+  static List<List<int>> getStartApplyPositionOfRotation(List<List<int>> currentMinoArrangement, int minoArg, int rotateArg, int argAfterRotation){
     List<int> startApplyPosition; // [xPos, yPos] 適用開始位置
 
     int firstNotZeroXPos;
@@ -383,6 +418,66 @@ class minoModelGenerater  {
     }
 
     startApplyPosition = [firstNotZeroXPos + adjust[0], firstNotZeroYPos + adjust[1]];
-    return startApplyPosition;
+
+    /// ここからSRSを適用した回転適用開始位置をリストにつめる
+    List<List<int>> startApplyPositionListWithSRS = List<List<int>>();
+    startApplyPositionListWithSRS.add(startApplyPosition); // 最初の回転適用開始位置をadd
+
+    switch(argAfterRotation){
+      case 90:
+        if(rotateArg == 90){ // 右回転しようとしたとき
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[0][0] - 2, startApplyPositionListWithSRS[0][1]]);
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[1][0] + 3, startApplyPositionListWithSRS[1][1]]);
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[1][0], startApplyPositionListWithSRS[1][1] + 1]);
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[2][0], startApplyPositionListWithSRS[2][1] - 2]);
+        } else if (rotateArg == 270){ // 左回転しようとしたとき
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[0][0] + 1, startApplyPositionListWithSRS[0][1]]);
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[1][0] - 3, startApplyPositionListWithSRS[1][1]]);
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[1][0], startApplyPositionListWithSRS[1][1] + 2]);
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[2][0], startApplyPositionListWithSRS[2][1] - 1]);
+        }
+        break;
+      case 270:
+        if(rotateArg == 90){ // 右回転しようとしたとき
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[0][0] + 2, startApplyPositionListWithSRS[0][1]]);
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[1][0] - 3, startApplyPositionListWithSRS[1][1]]);
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[1][0], startApplyPositionListWithSRS[1][1] - 1]);
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[2][0], startApplyPositionListWithSRS[2][1] + 2]);
+        } else if (rotateArg == 270){ // 左回転しようとしたとき
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[0][0] - 1, startApplyPositionListWithSRS[0][1]]);
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[1][0] + 3, startApplyPositionListWithSRS[1][1]]);
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[1][0], startApplyPositionListWithSRS[1][1] - 2]);
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[2][0], startApplyPositionListWithSRS[2][1] + 1]);
+        }
+        break;
+      case 0:
+        if(rotateArg == 90){ // 右回転しようとしたとき
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[0][0] - 2, startApplyPositionListWithSRS[0][1]]);
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[1][0] + 3, startApplyPositionListWithSRS[1][1]]);
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[1][0], startApplyPositionListWithSRS[1][1] + 2]);
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[2][0], startApplyPositionListWithSRS[2][1] - 1]);
+        } else if (rotateArg == 270){ // 左回転しようとしたとき
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[0][0] + 2, startApplyPositionListWithSRS[0][1]]);
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[1][0] - 3, startApplyPositionListWithSRS[1][1]]);
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[1][0], startApplyPositionListWithSRS[1][1] - 1]);
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[2][0], startApplyPositionListWithSRS[2][1] + 2]);
+        }
+        break;
+      case 180:
+        if(rotateArg == 90){ // 右回転しようとしたとき
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[0][0] - 1, startApplyPositionListWithSRS[0][1]]);
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[1][0] + 3, startApplyPositionListWithSRS[1][1]]);
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[1][0], startApplyPositionListWithSRS[1][1] - 2]);
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[2][0], startApplyPositionListWithSRS[2][1] + 1]);
+        } else if (rotateArg == 270){ // 左回転しようとしたとき
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[0][0] + 1, startApplyPositionListWithSRS[0][1]]);
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[1][0] - 3, startApplyPositionListWithSRS[1][1]]);
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[1][0], startApplyPositionListWithSRS[1][1] + 1]);
+          startApplyPositionListWithSRS.add([startApplyPositionListWithSRS[1][0], startApplyPositionListWithSRS[1][1] - 2]);
+        }
+        break;
+    }
+
+    return startApplyPositionListWithSRS;
   }
 }

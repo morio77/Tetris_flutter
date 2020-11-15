@@ -385,11 +385,11 @@ class MinoState extends ChangeNotifier{
     rotateMinoModel = minoModelGenerater.generate(currentMinoType, argAfterRotation);
 
     /// 回転軸を取得する
-    List<int> axisOfRotation;
-    List<int> startApplyPosition;
+    List<List<int>> axisOfRotationList;
+    List<List<int>> startApplyPositionList;
     switch(currentMinoType){
       case 1: // Iミノ
-        startApplyPosition = minoModelGenerater.getStartApplyPositionOfRotation(currentMinoArrangement, currentMinoArg);
+        startApplyPositionList = minoModelGenerater.getStartApplyPositionOfRotation(currentMinoArrangement, currentMinoArg, rotateArg, argAfterRotation);
         break;
 
       case 2: // Oミノ
@@ -400,15 +400,36 @@ class MinoState extends ChangeNotifier{
       case 5:
       case 6:
       case 7:
-      axisOfRotation = minoModelGenerater.getAxisOfRotation(currentMinoArrangement, currentMinoType, currentMinoArg);
+      axisOfRotationList = minoModelGenerater.getAxisOfRotationWithSRS(currentMinoArrangement, currentMinoType, currentMinoArg, rotateArg, argAfterRotation);
         break;
     }
 
-    /// ミノが回転できるか判定
+    /// ミノを回転できるなら回転させる。できないならそのまま終了。（SRS適用）
     switch(currentMinoType){
       case 1: // Iミノ
-        if(_isCollideWhenRotateOfIMino(startApplyPosition, rotateMinoModel) == true){
-          return false;
+        for(int index = 0; index < startApplyPositionList.length; index++){
+          /// 回転させられるなら回転させる
+          if(_isCollideWhenRotateOfIMino(startApplyPositionList[index], rotateMinoModel) == false){
+            currentMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
+            int yPos = 0;
+            for(final sideLine in rotateMinoModel){
+              int xPos = 0;
+              for(final square in sideLine){
+                if(square != 0){
+                  currentMinoArrangement[yPos + startApplyPositionList[index][1]][xPos + startApplyPositionList[index][0]] = square;
+                }
+                xPos++;
+              }
+              yPos++;
+            }
+
+
+            currentMinoArg = argAfterRotation;
+            _calcCurrentMinoFallPosition(); // 落下予測位置計算
+            notifyListeners();
+            return true;
+
+          }
         }
         break;
 
@@ -420,49 +441,46 @@ class MinoState extends ChangeNotifier{
       case 5:
       case 6:
       case 7:
-      if(_isCollideWhenRotate(axisOfRotation, rotateMinoModel) == true){
-        return false;
-      }
+        for(int index = 0; index < axisOfRotationList.length; index++){
+          /// 回転させられるなら回転させる
+          if(_isCollideWhenRotate(axisOfRotationList[index], rotateMinoModel) == false){
+            currentMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
+            int yPos = 0;
+            for(final sideLine in rotateMinoModel){
+              int xPos = 0;
+              for(final square in sideLine){
+                if(square != 0){
+                  currentMinoArrangement[yPos + axisOfRotationList[index][1] -1][xPos + axisOfRotationList[index][0] -1] = square;
+                }
+                xPos++;
+              }
+              yPos++;
+            }
+
+
+            currentMinoArg = argAfterRotation;
+            _calcCurrentMinoFallPosition(); // 落下予測位置計算
+            notifyListeners();
+            return true;
+
+          }
+        }
         break;
     }
+
+    /// ここまできたら回転できなかったということ
+    return false;
 
     /// ここまで来たらミノは回転可能なので回転させる
     if (currentMinoType == 2){ // アニメーションをつけるならここで?
 
     }
     else if (currentMinoType == 1){ // Iミノ
-      currentMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
-      int yPos = 0;
-      for(final sideLine in rotateMinoModel){
-        int xPos = 0;
-        for(final square in sideLine){
-          if(square != 0){
-            currentMinoArrangement[yPos + startApplyPosition[1]][xPos + startApplyPosition[0]] = square;
-          }
-          xPos++;
-        }
-        yPos++;
-      }
+
     }
     else{
-      currentMinoArrangement = List.generate(20, (index) => List.generate(10, (index) => 0));
-      int yPos = 0;
-      for(final sideLine in rotateMinoModel){
-        int xPos = 0;
-        for(final square in sideLine){
-          if(square != 0){
-            currentMinoArrangement[yPos + axisOfRotation[1] -1][xPos + axisOfRotation[0] -1] = square;
-          }
-          xPos++;
-        }
-        yPos++;
-      }
-    }
 
-    currentMinoArg = argAfterRotation;
-    _calcCurrentMinoFallPosition(); // 落下予測位置計算
-    notifyListeners();
-    return true;
+    }
   }
 
   /// =====================
